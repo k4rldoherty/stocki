@@ -41,12 +41,20 @@ public class CommandService
 
     private async Task HandleGetStockInfoAsync(SocketSlashCommand cmd)
     {
-        var ticker = cmd.Data.Options.FirstOrDefault();
-        if (ticker is null)
+        var ticker = (string)cmd.Data.Options.FirstOrDefault();
+        if (string.IsNullOrEmpty(ticker))
         {
             await cmd.RespondAsync("Ticker invalid");
             return;
         }
+        if (ticker.Count() < 1 || ticker.Count() > 4)
+        {
+            await cmd.RespondAsync(
+                "Please enter a ticker between 1 and 4 characters and try again"
+            );
+            return;
+        }
+        // TODO: Pass ticker to application layer to handle
     }
 
     private async Task HandleGetNewsAsync(SocketSlashCommand cmd)
