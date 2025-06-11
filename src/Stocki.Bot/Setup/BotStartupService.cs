@@ -4,7 +4,9 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stocki.Bot.Chat;
+using Stocki.Shared.Config;
 
 namespace Stocki.Bot.Setup;
 
@@ -15,13 +17,15 @@ public class BotStartupService : BackgroundService
     private readonly InteractionService _interactionService;
     private readonly IServiceProvider _serviceProvider;
     private readonly InputHandlerService _inputHandlerService; // If still needed
+    private readonly IOptions<DiscordSettings> _discordSettings;
 
     public BotStartupService(
         ILogger<BotStartupService> logger,
         DiscordSocketClient client,
         InteractionService interactionService,
         IServiceProvider serviceProvider,
-        InputHandlerService inputHandlerService
+        InputHandlerService inputHandlerService,
+        IOptions<DiscordSettings> discordSettings
     )
     {
         _logger = logger;
@@ -29,6 +33,7 @@ public class BotStartupService : BackgroundService
         _interactionService = interactionService;
         _serviceProvider = serviceProvider;
         _inputHandlerService = inputHandlerService;
+        _discordSettings = discordSettings;
 
         // Hook up logging events
         _client.Log += LogAsync;
@@ -43,13 +48,11 @@ public class BotStartupService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var token = Environment.GetEnvironmentVariable("DISCORDTOKEN");
+        var token = _discordSettings.Value.Token;
         if (string.IsNullOrEmpty(token))
         {
-            _logger.LogError("DISCORDTOKEN environment variable is not set.");
-            throw new InvalidOperationException(
-                "Discord bot token is missing. Please set the DISCORDTOKEN environment variable."
-            );
+            _logger.LogError("Token variable is not set.");
+            throw new InvalidOperationException("Discord bot token is missing.");
         }
 
         _logger.LogInformation("Attempting login...");

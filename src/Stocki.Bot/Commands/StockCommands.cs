@@ -30,34 +30,7 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
             );
             return;
         }
+        // TODO: Make query object and Ticker Param and pass to application layer for processing
         _logger.LogInformation($"Recieved /overview command for ticker {ticker}");
-    }
-
-    private async Task HandleGetStockPriceDataAsync(SocketSlashCommand cmd)
-    {
-        var ticker = (string)cmd.Data.Options.FirstOrDefault();
-        if (string.IsNullOrEmpty(ticker))
-        {
-            await cmd.RespondAsync("Ticker invalid");
-            return;
-        }
-        if (ticker.Count() < 1 || ticker.Count() > 4)
-        {
-            await cmd.RespondAsync(
-                "Please enter a ticker between 1 and 4 characters and try again"
-            );
-            return;
-        }
-        // TODO: Pass ticker to application layer to handle
-    }
-
-    private async Task HandleGetNewsAsync(SocketSlashCommand cmd)
-    {
-        var ticker = cmd.Data.Options.FirstOrDefault();
-        if (ticker is null)
-        {
-            return;
-        }
-        await Task.CompletedTask;
     }
 }
