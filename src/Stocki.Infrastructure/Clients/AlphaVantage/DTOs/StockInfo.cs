@@ -5,7 +5,7 @@ namespace Stocki.Infrastructure.Clients.DTOs;
 public record AVStockOverviewDTO(
     [JsonProperty("Symbol")] string Symbol,
     [JsonProperty("AssetType")] string? AssetType,
-    [JsonProperty("Name")] string? Name,
+    [JsonProperty("Name")] string Name,
     [JsonProperty("Description")] string? Description,
     [JsonProperty("CIK")] string? CIK,
     [JsonProperty("Exchange")] string? Exchange,

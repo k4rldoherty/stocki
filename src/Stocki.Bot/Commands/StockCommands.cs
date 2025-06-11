@@ -1,8 +1,7 @@
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-
-// using Stocki.Application;
+using Stocki.Application.Queries;
+using Stocki.Domain.ValueObjects;
 
 namespace Stocki.Bot.Commands;
 
@@ -31,6 +30,8 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
             return;
         }
         // TODO: Make query object and Ticker Param and pass to application layer for processing
+        TickerSymbol s = new TickerSymbol(ticker);
+        StockOverviewQuery q = new(s);
         _logger.LogInformation($"Recieved /overview command for ticker {ticker}");
     }
 }

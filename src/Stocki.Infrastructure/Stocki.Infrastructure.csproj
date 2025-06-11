@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Stocki.Domain\Stocki.Domain.csproj" />
     <ProjectReference Include="..\Stocki.Shared\Stocki.Shared.csproj" />
+    <ProjectReference Include="..\Stocki.Application\Stocki.Application.csproj" />
   </ItemGroup>
 
 </Project>
