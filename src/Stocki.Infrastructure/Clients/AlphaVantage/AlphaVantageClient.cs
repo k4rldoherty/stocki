@@ -1,8 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Stocki.Domain.Interfaces.StockData;
-using Stocki.Domain.Models.StockData;
+using Stocki.Infrastructure.Clients.DTOs;
 
 namespace Stocki.Infrastructure.Clients;
 
@@ -30,10 +29,10 @@ public class AlphaVantageClient : IAlphaVantageClient
         _logger = logger;
     }
 
-    public async Task<StockOverview?> GetStockOverviewAsync(string symbol)
+    public async Task<AVStockOverviewDTO?> GetStockOverviewAsync(string symbol)
     {
         var url = $"{_alphaBaseUrl}query?function=OVERVIEW&symbol={symbol}&apikey={_alphaApi}";
-        if (_cache.TryGetValue(url, out StockOverview? CacheRes))
+        if (_cache.TryGetValue(url, out AVStockOverviewDTO? CacheRes))
         {
             return CacheRes;
         }
@@ -41,7 +40,9 @@ public class AlphaVantageClient : IAlphaVantageClient
         {
             symbol = symbol.ToUpper();
             var res = await _client.GetStreamAsync(url);
-            StockOverview? obj = await JsonSerializer.DeserializeAsync<StockOverview>(res);
+            AVStockOverviewDTO? obj = await JsonSerializer.DeserializeAsync<AVStockOverviewDTO>(
+                res
+            );
             _cache.Set(url, obj, DateTimeOffset.Now.AddDays(1));
             return obj;
         }

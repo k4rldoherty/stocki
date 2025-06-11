@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,9 +16,18 @@ builder.ConfigureServices(
     (context, services) =>
     {
         services.AddSingleton<DiscordSocketClient>();
-        services.AddHostedService<BotService>();
-        services.AddSingleton<CommandService>();
-        services.AddSingleton<CommandRegistry>();
+        // Interaction Service that handles the execution of commands
+        services.AddSingleton(x => new InteractionService(
+            x.GetRequiredService<DiscordSocketClient>(),
+            new InteractionServiceConfig()
+            {
+                AutoServiceScopes = true,
+                LogLevel = Discord.LogSeverity.Info,
+            }
+        ));
+        // Hosted service for bot startup
+        services.AddHostedService<BotStartupService>();
+        services.AddSingleton<StockCommands>();
         services.AddSingleton<InputHandlerService>();
         // Keeps Infrastructure decoupled from Bot and Application layers
         services.AddSingleton<IAlphaVantageClient, AlphaVantageClient>();

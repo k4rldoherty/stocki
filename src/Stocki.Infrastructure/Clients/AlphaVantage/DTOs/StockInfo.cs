@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace Stocki.Domain.Models.StockData;
+namespace Stocki.Infrastructure.Clients.DTOs;
 
-public record StockOverview(
+public record AVStockOverviewDTO(
     [property: JsonPropertyName("Symbol")] string Symbol,
     [property: JsonPropertyName("AssetType")] string? AssetType,
     [property: JsonPropertyName("Name")] string? Name,
