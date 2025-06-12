@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Overview;
+using Stocki.Application.Queries.Price;
 using Stocki.Bot.Chat;
 using Stocki.Bot.Commands;
 using Stocki.Bot.Setup;
@@ -20,7 +21,11 @@ builder.ConfigureServices(
     {
         services.AddMemoryCache();
         services.Configure<AlphaVantageSettings>(context.Configuration.GetSection("AlphaVantage"));
+        services.Configure<FinnhubClientSettings>(context.Configuration.GetSection("Finnhub"));
         services.Configure<DiscordSettings>(context.Configuration.GetSection("Discord"));
+        //
+        // --- Alpha Client
+        //
         services.AddHttpClient<IAlphaVantageClient, AlphaVantageClient>(client =>
         {
             var alphaVantageSettings = context
@@ -31,12 +36,27 @@ builder.ConfigureServices(
                 client.BaseAddress = new Uri(alphaVantageSettings.BaseUrl);
             }
         });
+        //
+        // --- Finnhub Client
+        //
+        services.AddHttpClient<IFinnhubClient, FinnhubClient>(client =>
+        {
+            var finnhubClientSettings = context
+                .Configuration.GetSection("Finnhub")
+                .Get<FinnhubClientSettings>();
+            if (
+                finnhubClientSettings != null
+                && !string.IsNullOrEmpty(finnhubClientSettings.BaseUrl)
+            )
+            {
+                client.BaseAddress = new Uri(finnhubClientSettings.BaseUrl);
+            }
+        });
         services.AddSingleton(x =>
         {
             var discordSettings = x.GetRequiredService<IOptions<DiscordSettings>>().Value; // Get the settings here
             return new DiscordSocketClient();
         });
-        services.AddSingleton<DiscordSocketClient>();
         // Interaction Service that handles the execution of commands
         services.AddSingleton(x => new InteractionService(
             x.GetRequiredService<DiscordSocketClient>(),
@@ -52,8 +72,10 @@ builder.ConfigureServices(
         services.AddSingleton<InputHandlerService>();
 
         // Keeps Infrastructure decoupled from Bot and Application layers
-        services.AddSingleton<IAlphaVantageClient, AlphaVantageClient>();
-        services.AddSingleton<IStockOverviewQueryHandler, StockOverviewQueryHandler>();
+        // services.AddSingleton<IAlphaVantageClient, AlphaVantageClient>();
+        services.AddSingleton<StockOverviewQueryHandler>();
+        services.AddSingleton<StockQuoteQueryHandler>();
+        // services.AddSingleton<IFinnhubClient, FinnhubClient>();
     }
 );
 builder.ConfigureLogging(logging => logging.AddConsole());

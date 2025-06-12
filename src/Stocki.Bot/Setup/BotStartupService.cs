@@ -120,7 +120,7 @@ public class BotStartupService : BackgroundService
         // Register commands globally. This pushes the commands to Discord.
         try
         {
-            await _interactionService.RegisterCommandsGloballyAsync();
+            await _interactionService.RegisterCommandsGloballyAsync(true);
             _logger.LogInformation("Registered global slash commands.");
         }
         catch (Exception ex)

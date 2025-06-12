@@ -4,26 +4,26 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
-using Stocki.Application.Queries.Overview;
+using Stocki.Application.Queries.Price;
 using Stocki.Domain.Models;
-using Stocki.Infrastructure.Clients.AlphaVantage;
-using Stocki.Infrastructure.Clients.DTOs;
+using Stocki.Infrastructure.Clients.Finnhub;
+using Stocki.Infrastructure.Clients.Finnhub.DTOs;
 using Stocki.Shared.Config;
 
 namespace Stocki.Infrastructure.Clients;
 
-public class AlphaVantageClient : IAlphaVantageClient
+public class FinnhubClient : IFinnhubClient
 {
     private readonly IMemoryCache _cache;
     private readonly HttpClient _client;
-    private readonly ILogger<AlphaVantageClient> _logger;
-    private readonly IOptions<AlphaVantageSettings> _settings;
+    private readonly ILogger<FinnhubClient> _logger;
+    private readonly IOptions<FinnhubClientSettings> _settings;
 
-    public AlphaVantageClient(
+    public FinnhubClient(
         IMemoryCache cache,
         HttpClient httpClient,
-        ILogger<AlphaVantageClient> logger,
-        IOptions<AlphaVantageSettings> settings
+        ILogger<FinnhubClient> logger,
+        IOptions<FinnhubClientSettings> settings
     )
     {
         _cache = cache;
@@ -32,11 +32,11 @@ public class AlphaVantageClient : IAlphaVantageClient
         _settings = settings;
     }
 
-    public async Task<StockOverview?> GetStockOverviewAsync(StockOverviewQuery q)
+    public async Task<StockQuote?> GetStockQuoteAsync(StockQuoteQuery q)
     {
         var url =
-            $"{_settings.Value.BaseUrl}query?function=OVERVIEW&symbol={q.Symbol.Value}&apikey={_settings.Value.ApiKey}";
-        if (_cache.TryGetValue(url, out StockOverview? CacheRes))
+            $"{_settings.Value.BaseUrl}quote?symbol={q.Symbol.Value}&token={_settings.Value.ApiKey}";
+        if (_cache.TryGetValue(url, out StockQuote? CacheRes))
         {
             _logger.LogInformation($"Query retrieved from cache: {url}");
             return CacheRes;
@@ -51,18 +51,31 @@ public class AlphaVantageClient : IAlphaVantageClient
             }
             string resStr = await res.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(resStr) || resStr.Equals("{}"))
+            {
+                _logger.LogError("Response was empty");
                 return null;
+            }
 
-            AVStockOverviewDTO? avObj = JsonConvert.DeserializeObject<AVStockOverviewDTO>(resStr);
+            FHStockQuoteDTO? stockQuoteDTO = JsonConvert.DeserializeObject<FHStockQuoteDTO>(resStr);
 
-            if (avObj == null)
+            if (stockQuoteDTO == null)
             {
                 _logger.LogWarning("Serialized object was null");
                 return null;
             }
 
             // Uses static mapped class
-            var returnObj = AlphaVantageMappingHelper.MapOverview(avObj, q.Symbol.Value, _logger);
+            var returnObj = FinnhubMappingHelper.MapStockQuote(
+                stockQuoteDTO,
+                q.Symbol.Value,
+                _logger
+            );
+            if (returnObj == null)
+            {
+                _logger.LogError("Problem mapping object");
+                return null;
+            }
+            _logger.LogInformation("Object mapped successfully");
             _cache.Set(url, returnObj);
             return returnObj;
         }

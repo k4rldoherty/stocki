@@ -4,7 +4,7 @@ using Stocki.Domain.Models;
 
 namespace Stocki.Application.Queries.Overview;
 
-public class StockOverviewQueryHandler : IStockOverviewQueryHandler
+public class StockOverviewQueryHandler
 {
     private readonly IAlphaVantageClient _alphaVantageClient;
     private readonly ILogger<StockOverviewQueryHandler> _logger;
