@@ -1,6 +1,6 @@
 using Stocki.Domain.ValueObjects;
 
-namespace Stocki.Application.Queries;
+namespace Stocki.Application.Queries.Overview;
 
 public record StockOverviewQuery
 {

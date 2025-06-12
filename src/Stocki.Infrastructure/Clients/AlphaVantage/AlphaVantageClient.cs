@@ -1,9 +1,10 @@
 using System.Net;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
-using Stocki.Application.Queries;
+using Stocki.Application.Queries.Overview;
 using Stocki.Domain.Models;
 using Stocki.Infrastructure.Clients.DTOs;
 using Stocki.Shared.Config;
@@ -15,13 +16,13 @@ public class AlphaVantageClient : IAlphaVantageClient
     private readonly IMemoryCache _cache;
     private readonly HttpClient _client;
     private readonly ILogger<AlphaVantageClient> _logger;
-    private readonly AlphaVantageSettings _settings;
+    private readonly IOptions<AlphaVantageSettings> _settings;
 
     public AlphaVantageClient(
         IMemoryCache cache,
         HttpClient httpClient,
         ILogger<AlphaVantageClient> logger,
-        AlphaVantageSettings settings
+        IOptions<AlphaVantageSettings> settings
     )
     {
         _cache = cache;
@@ -33,7 +34,7 @@ public class AlphaVantageClient : IAlphaVantageClient
     public async Task<StockOverview?> GetStockOverviewAsync(StockOverviewQuery q)
     {
         var url =
-            $"{_settings.BaseUrl}query?function=OVERVIEW&symbol={q.Symbol.Value}&apikey={_settings.ApiKey}";
+            $"{_settings.Value.BaseUrl}query?function=OVERVIEW&symbol={q.Symbol.Value}&apikey={_settings.Value.ApiKey}";
         if (_cache.TryGetValue(url, out StockOverview? CacheRes))
         {
             return CacheRes;

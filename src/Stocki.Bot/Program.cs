@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Stocki.Application.Interfaces;
+using Stocki.Application.Queries.Overview;
 using Stocki.Bot.Chat;
 using Stocki.Bot.Commands;
 using Stocki.Bot.Setup;
@@ -16,6 +18,7 @@ builder.ConfigureAppConfiguration(cfg => cfg.AddEnvironmentVariables());
 builder.ConfigureServices(
     (context, services) =>
     {
+        services.AddMemoryCache();
         services.Configure<AlphaVantageSettings>(context.Configuration.GetSection("AlphaVantage"));
         services.Configure<DiscordSettings>(context.Configuration.GetSection("Discord"));
         services.AddHttpClient<IAlphaVantageClient, AlphaVantageClient>(client =>
@@ -50,6 +53,7 @@ builder.ConfigureServices(
 
         // Keeps Infrastructure decoupled from Bot and Application layers
         services.AddSingleton<IAlphaVantageClient, AlphaVantageClient>();
+        services.AddSingleton<IStockOverviewQueryHandler, StockOverviewQueryHandler>();
     }
 );
 builder.ConfigureLogging(logging => logging.AddConsole());

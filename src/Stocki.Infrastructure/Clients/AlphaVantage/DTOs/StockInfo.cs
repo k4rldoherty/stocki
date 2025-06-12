@@ -3,9 +3,9 @@ using Newtonsoft.Json; // Use Newtonsoft.Json's attribute
 namespace Stocki.Infrastructure.Clients.DTOs;
 
 public record AVStockOverviewDTO(
-    [JsonProperty("Symbol")] string Symbol,
+    [JsonProperty("Symbol")] string? Symbol, // Changed to string?
     [JsonProperty("AssetType")] string? AssetType,
-    [JsonProperty("Name")] string Name,
+    [JsonProperty("Name")] string? Name, // Changed to string?
     [JsonProperty("Description")] string? Description,
     [JsonProperty("CIK")] string? CIK,
     [JsonProperty("Exchange")] string? Exchange,
@@ -16,43 +16,43 @@ public record AVStockOverviewDTO(
     [JsonProperty("Address")] string? Address,
     [JsonProperty("OfficialSite")] string? OfficialSite,
     [JsonProperty("FiscalYearEnd")] string? FiscalYearEnd,
-    [JsonProperty("LatestQuarter")] DateTime? LatestQuarter,
-    [JsonProperty("MarketCapitalization")] long? MarketCapitalization,
-    [JsonProperty("EBITDA")] long? EBITDA,
-    [JsonProperty("PERatio")] decimal? PERatio,
-    [JsonProperty("PEGRatio")] decimal? PEGRatio,
-    [JsonProperty("BookValue")] decimal? BookValue,
-    [JsonProperty("DividendPerShare")] decimal? DividendPerShare,
-    [JsonProperty("DividendYield")] decimal? DividendYield,
-    [JsonProperty("EPS")] decimal? EPS,
-    [JsonProperty("RevenuePerShareTTM")] decimal? RevenuePerShareTTM,
-    [JsonProperty("ProfitMargin")] decimal? ProfitMargin,
-    [JsonProperty("OperatingMarginTTM")] decimal? OperatingMarginTTM,
-    [JsonProperty("ReturnOnAssetsTTM")] decimal? ReturnOnAssetsTTM,
-    [JsonProperty("ReturnOnEquityTTM")] decimal? ReturnOnEquityTTM,
-    [JsonProperty("RevenueTTM")] long? RevenueTTM,
-    [JsonProperty("GrossProfitTTM")] long? GrossProfitTTM,
-    [JsonProperty("DilutedEPSTTM")] decimal? DilutedEPSTTM,
-    [JsonProperty("QuarterlyEarningsGrowthYOY")] decimal? QuarterlyEarningsGrowthYOY,
-    [JsonProperty("QuarterlyRevenueGrowthYOY")] decimal? QuarterlyRevenueGrowthYOY,
-    [JsonProperty("AnalystTargetPrice")] decimal? AnalystTargetPrice,
-    [JsonProperty("AnalystRatingStrongBuy")] int? AnalystRatingStrongBuy,
-    [JsonProperty("AnalystRatingBuy")] int? AnalystRatingBuy,
-    [JsonProperty("AnalystRatingHold")] int? AnalystRatingHold,
-    [JsonProperty("AnalystRatingSell")] int? AnalystRatingSell,
-    [JsonProperty("AnalystRatingStrongSell")] int? AnalystRatingStrongSell,
-    [JsonProperty("TrailingPE")] decimal? TrailingPE,
-    [JsonProperty("ForwardPE")] decimal? ForwardPE,
-    [JsonProperty("PriceToSalesRatioTTM")] decimal? PriceToSalesRatioTTM,
-    [JsonProperty("PriceToBookRatio")] decimal? PriceToBookRatio,
-    [JsonProperty("EVToRevenue")] decimal? EVToRevenue,
-    [JsonProperty("EVToEBITDA")] decimal? EVToEBITDA,
-    [JsonProperty("Beta")] decimal? Beta,
-    [JsonProperty("52WeekHigh")] decimal? FiftyTwoWeekHigh, // Corrected property name for C# compliance
-    [JsonProperty("52WeekLow")] decimal? FiftyTwoWeekLow, // Corrected property name for C# compliance
-    [JsonProperty("50DayMovingAverage")] decimal? FiftyDayMovingAverage,
-    [JsonProperty("200DayMovingAverage")] decimal? TwoHundredDayMovingAverage,
-    [JsonProperty("SharesOutstanding")] long? SharesOutstanding,
-    [JsonProperty("DividendDate")] DateTime? DividendDate,
-    [JsonProperty("ExDividendDate")] DateTime? ExDividendDate
+    [JsonProperty("LatestQuarter")] string? LatestQuarter, // Changed to string?
+    [JsonProperty("MarketCapitalization")] string? MarketCapitalization, // Changed to string?
+    [JsonProperty("EBITDA")] string? EBITDA, // Changed to string?
+    [JsonProperty("PERatio")] string? PERatio, // Changed to string?
+    [JsonProperty("PEGRatio")] string? PEGRatio, // Changed to string?
+    [JsonProperty("BookValue")] string? BookValue, // Changed to string?
+    [JsonProperty("DividendPerShare")] string? DividendPerShare,
+    [JsonProperty("DividendYield")] string? DividendYield,
+    [JsonProperty("EPS")] string? EPS, // Changed to string?
+    [JsonProperty("RevenuePerShareTTM")] string? RevenuePerShareTTM, // Changed to string?
+    [JsonProperty("ProfitMargin")] string? ProfitMargin, // Changed to string?
+    [JsonProperty("OperatingMarginTTM")] string? OperatingMarginTTM, // Changed to string?
+    [JsonProperty("ReturnOnAssetsTTM")] string? ReturnOnAssetsTTM, // Changed to string?
+    [JsonProperty("ReturnOnEquityTTM")] string? ReturnOnEquityTTM, // Changed to string?
+    [JsonProperty("RevenueTTM")] string? RevenueTTM, // Changed to string?
+    [JsonProperty("GrossProfitTTM")] string? GrossProfitTTM, // Changed to string?
+    [JsonProperty("DilutedEPSTTM")] string? DilutedEPSTTM, // Changed to string?
+    [JsonProperty("QuarterlyEarningsGrowthYOY")] string? QuarterlyEarningsGrowthYOY, // Changed to string?
+    [JsonProperty("QuarterlyRevenueGrowthYOY")] string? QuarterlyRevenueGrowthYOY, // Changed to string?
+    [JsonProperty("AnalystTargetPrice")] string? AnalystTargetPrice, // Changed to string?
+    [JsonProperty("AnalystRatingStrongBuy")] string? AnalystRatingStrongBuy, // Changed to string?
+    [JsonProperty("AnalystRatingBuy")] string? AnalystRatingBuy, // Changed to string?
+    [JsonProperty("AnalystRatingHold")] string? AnalystRatingHold, // Changed to string?
+    [JsonProperty("AnalystRatingSell")] string? AnalystRatingSell, // Changed to string?
+    [JsonProperty("AnalystRatingStrongSell")] string? AnalystRatingStrongSell, // Changed to string?
+    [JsonProperty("TrailingPE")] string? TrailingPE, // Changed to string?
+    [JsonProperty("ForwardPE")] string? ForwardPE, // Changed to string?
+    [JsonProperty("PriceToSalesRatioTTM")] string? PriceToSalesRatioTTM, // Changed to string?
+    [JsonProperty("PriceToBookRatio")] string? PriceToBookRatio, // Changed to string?
+    [JsonProperty("EVToRevenue")] string? EVToRevenue, // Changed to string?
+    [JsonProperty("EVToEBITDA")] string? EVToEBITDA, // Changed to string?
+    [JsonProperty("Beta")] string? Beta, // Changed to string?
+    [JsonProperty("52WeekHigh")] string? FiftyTwoWeekHigh, // Changed to string?
+    [JsonProperty("52WeekLow")] string? FiftyTwoWeekLow, // Changed to string?
+    [JsonProperty("50DayMovingAverage")] string? FiftyDayMovingAverage, // Changed to string?
+    [JsonProperty("200DayMovingAverage")] string? TwoHundredDayMovingAverage, // Changed to string?
+    [JsonProperty("SharesOutstanding")] string? SharesOutstanding, // Changed to string?
+    [JsonProperty("DividendDate")] string? DividendDate, // Changed to string?
+    [JsonProperty("ExDividendDate")] string? ExDividendDate // Changed to string?
 );
