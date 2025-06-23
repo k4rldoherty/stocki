@@ -1,10 +1,11 @@
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
 using Stocki.Domain.Models;
 
 namespace Stocki.Application.Queries.Overview;
 
-public class StockOverviewQueryHandler
+public class StockOverviewQueryHandler : IRequestHandler<StockOverviewQuery, StockOverview?>
 {
     private readonly IAlphaVantageClient _alphaVantageClient;
     private readonly ILogger<StockOverviewQueryHandler> _logger;
@@ -18,11 +19,30 @@ public class StockOverviewQueryHandler
         _logger = l;
     }
 
-    public async Task<StockOverview?> HandleAsync(StockOverviewQuery q)
+    public async Task<StockOverview?> Handle(
+        StockOverviewQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var domainOverview = await _alphaVantageClient.GetStockOverviewAsync(q);
+        _logger.LogDebug("Handling StockOverviewQuery for symbol: {Symbol}", request.Symbol.Value);
+        StockOverview? domainOverview = await _alphaVantageClient.GetStockOverviewAsync(
+            request,
+            cancellationToken
+        );
+
         if (domainOverview == null)
+        {
+            _logger.LogWarning(
+                "No stock overview data returned from AlphaVantage for symbol: {Symbol}",
+                request.Symbol.Value
+            );
             return null;
+        }
+
+        _logger.LogInformation(
+            "Successfully retrieved stock overview for symbol: {Symbol}",
+            request.Symbol.Value
+        );
         return domainOverview;
     }
 }

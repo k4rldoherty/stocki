@@ -32,7 +32,10 @@ public class AlphaVantageClient : IAlphaVantageClient
         _settings = settings;
     }
 
-    public async Task<StockOverview?> GetStockOverviewAsync(StockOverviewQuery q)
+    public async Task<StockOverview?> GetStockOverviewAsync(
+        StockOverviewQuery q,
+        CancellationToken token
+    )
     {
         var url =
             $"{_settings.Value.BaseUrl}query?function=OVERVIEW&symbol={q.Symbol.Value}&apikey={_settings.Value.ApiKey}";
@@ -43,7 +46,7 @@ public class AlphaVantageClient : IAlphaVantageClient
         }
         try
         {
-            var res = await _client.GetAsync(url);
+            var res = await _client.GetAsync(url, token);
             if (res.StatusCode != HttpStatusCode.OK)
             {
                 _logger.LogWarning($"API returned status code {res.StatusCode}");

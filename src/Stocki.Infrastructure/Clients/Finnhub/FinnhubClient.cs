@@ -32,7 +32,7 @@ public class FinnhubClient : IFinnhubClient
         _settings = settings;
     }
 
-    public async Task<StockQuote?> GetStockQuoteAsync(StockQuoteQuery q)
+    public async Task<StockQuote?> GetStockQuoteAsync(StockQuoteQuery q, CancellationToken t)
     {
         var url =
             $"{_settings.Value.BaseUrl}quote?symbol={q.Symbol.Value}&token={_settings.Value.ApiKey}";
@@ -43,7 +43,7 @@ public class FinnhubClient : IFinnhubClient
         }
         try
         {
-            var res = await _client.GetAsync(url);
+            var res = await _client.GetAsync(url, t);
             if (res.StatusCode != HttpStatusCode.OK)
             {
                 _logger.LogWarning($"API returned status code {res.StatusCode}");

@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Queries.Overview;
 using Stocki.Application.Queries.Price;
@@ -11,51 +12,48 @@ namespace Stocki.Bot.Commands;
 public class StockCommands : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ILogger<StockCommands> _logger;
-    private readonly StockOverviewQueryHandler _stockOverviewQueryHandler;
-    private readonly StockQuoteQueryHandler _stockQuoteQueryHandler;
+    private readonly IMediator _mediator;
 
-    public StockCommands(
-        ILogger<StockCommands> logger,
-        StockQuoteQueryHandler qh,
-        StockOverviewQueryHandler oh
-    )
+    public StockCommands(ILogger<StockCommands> logger, IMediator m)
     {
         _logger = logger;
-        _stockOverviewQueryHandler = oh;
-        _stockQuoteQueryHandler = qh;
+        _mediator = m;
     }
 
-    // Handles the overview command
     [SlashCommand("overview", "Provides an in depth financial overview of a stock")]
     public async Task HandleGetStockOverviewAsync(
         [Summary("ticker", "the ticker of the stock you want an overview of e.g. AAPL")]
             string ticker
     )
     {
-        await DeferAsync();
-        if (string.IsNullOrEmpty(ticker) || ticker.Length < 1 || ticker.Length > 5)
-        {
-            await FollowupAsync(
-                "Please try again and enter a ticker between 1-4 characters in length"
-            );
-            return;
-        }
-        // TODO: Make query object and Ticker Param and pass to application layer for processing
-        TickerSymbol s = new TickerSymbol(ticker);
-        StockOverviewQuery q = new(s);
-        _logger.LogInformation($"Recieved /overview command for ticker {ticker}");
-        StockOverview? StockOverview = await _stockOverviewQueryHandler.HandleAsync(q);
-        var e = new EmbedBuilder();
+        await DeferAsync(); // Acknowledge command immediately
+
         try
         {
-            if (StockOverview == null)
+            TickerSymbol symbol = new TickerSymbol(ticker);
+            StockOverviewQuery query = new(symbol);
+
+            _logger.LogInformation("Received /overview command for ticker {Ticker}", ticker);
+
+            StockOverview? stockOverview = await _mediator.Send(query, CancellationToken.None);
+
+            var embedBuilder = new EmbedBuilder();
+
+            if (stockOverview == null)
             {
-                _logger.LogWarning($"The request failed");
+                _logger.LogWarning(
+                    "The /overview request failed for ticker {Ticker}. No data found.",
+                    ticker
+                );
                 await FollowupAsync(
-                    embed: e.WithTitle("Error")
+                    embed: embedBuilder
+                        .WithTitle("Error")
+                        .WithDescription(
+                            $"Could not retrieve detailed overview for **{ticker.ToUpperInvariant()}**."
+                        )
                         .AddField(
-                            "Why?",
-                            "Check the ticker of the stock you are looking for is correct, or try again"
+                            "Reason",
+                            "The ticker symbol might be incorrect, or data is temporarily unavailable. Please check the ticker and try again."
                         )
                         .WithFooter("Stocki 2025")
                         .WithColor(Color.Red)
@@ -64,31 +62,67 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
             }
             else
             {
-                _logger.LogInformation($"The request succeeded");
+                _logger.LogInformation(
+                    "The /overview request succeeded for ticker {Ticker}",
+                    ticker
+                );
                 await FollowupAsync(
-                    embed: e.WithTitle($"{StockOverview.Name} {StockOverview.Symbol})")
-                        .WithDescription(StockOverview.Description)
-                        .AddField("Sector", StockOverview.Sector)
-                        .AddField("Industry", StockOverview.Industry)
-                        .AddField("Market Cap", StockOverview.MarketCapitalization)
-                        .AddField("P/E Ratio", StockOverview.PERatio)
+                    embed: embedBuilder
+                        .WithTitle($"{stockOverview.Name} ({stockOverview.Symbol})")
+                        .WithDescription(stockOverview.Description)
+                        .AddField("Sector", stockOverview.Sector ?? "N/A")
+                        .AddField("Industry", stockOverview.Industry ?? "N/A")
+                        .AddField(
+                            "Market Cap",
+                            stockOverview.MarketCapitalization?.ToString("N0") ?? "N/A"
+                        )
+                        .AddField("P/E Ratio", stockOverview.PERatio?.ToString("N2") ?? "N/A")
                         .AddField(
                             "Dividend Yield",
-                            StockOverview.DividendYield != null
-                                ? StockOverview.DividendYield
-                                : "No Dividend for this company"
+                            stockOverview.DividendYield?.ToString("P2") ?? "N/A"
                         )
-                        .AddField("52 Week High", StockOverview.FiftyTwoWeekHigh)
-                        .AddField("52 Week Low", StockOverview.FiftyTwoWeekLow)
+                        .AddField(
+                            "52 Week High",
+                            stockOverview.FiftyTwoWeekHigh?.ToString("C2") ?? "N/A"
+                        ) // Format as currency
+                        .AddField(
+                            "52 Week Low",
+                            stockOverview.FiftyTwoWeekLow?.ToString("C2") ?? "N/A"
+                        ) // Format as currency
                         .WithColor(Color.Blue)
                         .WithFooter("Data provided by AlphaVantage")
                         .Build()
                 );
             }
         }
-        catch (Exception ex)
+        catch (ArgumentException ex) // Catch validation errors from TickerSymbol or other ArgumentExceptions
         {
-            _logger.LogError($"Error building message: {ex.Message}");
+            _logger.LogWarning(ex, "Invalid ticker format for /overview command: {Ticker}", ticker);
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("Input Error")
+                    .WithDescription($"The ticker '{ticker}' is invalid. Reason: {ex.Message}")
+                    .WithColor(Color.Orange) // Use a different color for input errors
+                    .Build()
+            );
+        }
+        catch (Exception ex) // Catch any other unexpected errors
+        {
+            _logger.LogError(
+                ex,
+                "An unexpected error occurred during /overview command for ticker: {Ticker}",
+                ticker
+            );
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("System Error")
+                    .WithDescription(
+                        "An unexpected error occurred while processing your request. Please try again later."
+                    )
+                    .WithFooter("If this persists, contact support.")
+                    .WithColor(Color.Red)
+                    .Build()
+            );
         }
     }
 
@@ -99,29 +133,34 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
     )
     {
         await DeferAsync();
-        if (string.IsNullOrEmpty(ticker) || ticker.Length < 1 || ticker.Length > 5)
-        {
-            await FollowupAsync(
-                "Please try again and enter a ticker between 1-4 characters in length"
-            );
-            return;
-        }
-        // TODO: Make query object and Ticker Param and pass to application layer for processing
-        TickerSymbol s = new TickerSymbol(ticker);
-        StockQuoteQuery q = new(s);
-        _logger.LogInformation($"Recieved /quote command for ticker {ticker}");
-        StockQuote? Quote = await _stockQuoteQueryHandler.HandleAsync(q);
-        var e = new EmbedBuilder();
+
         try
         {
-            if (Quote == null)
+            // TickerSymbol constructor will now handle validation
+            TickerSymbol symbol = new TickerSymbol(ticker);
+            StockQuoteQuery query = new(symbol);
+
+            _logger.LogInformation("Received /quote command for ticker {Ticker}", ticker);
+
+            StockQuote? quote = await _mediator.Send(query, CancellationToken.None);
+
+            var embedBuilder = new EmbedBuilder();
+
+            if (quote == null)
             {
-                _logger.LogWarning($"The request failed");
+                _logger.LogWarning(
+                    "The /quote request failed for ticker {Ticker}. No data found.",
+                    ticker
+                );
                 await FollowupAsync(
-                    embed: e.WithTitle("Error")
+                    embed: embedBuilder
+                        .WithTitle("Error")
+                        .WithDescription(
+                            $"Could not retrieve quote for **{ticker.ToUpperInvariant()}**."
+                        )
                         .AddField(
-                            "Why?",
-                            "Check the ticker of the stock you are looking for is correct, or try again"
+                            "Reason",
+                            "The ticker symbol might be incorrect, or data is temporarily unavailable. Please check the ticker and try again."
                         )
                         .WithFooter("Stocki 2025")
                         .WithColor(Color.Red)
@@ -130,23 +169,49 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
             }
             else
             {
-                _logger.LogInformation($"The request succeeded");
+                _logger.LogInformation("The /quote request succeeded for ticker {Ticker}", ticker);
                 await FollowupAsync(
-                    embed: e.WithTitle($"{Quote.Ticker} - Stock Quote {DateTime.Now}")
-                        .AddField("Current Price", $"${Quote.CurrentPrice}")
-                        .AddField("Opening Price", $"${Quote.OpeningPrice}")
-                        .AddField("Closing Price", $"${Quote.ClosingPrice}")
-                        .AddField("High", $"${Quote.High}")
-                        .AddField("Low", $"${Quote.Low}")
+                    embed: embedBuilder
+                        .WithTitle($"{quote.Ticker} - Stock Quote ({DateTime.Now})")
+                        .AddField("Current Price", $"${quote.CurrentPrice:F2}")
+                        .AddField("Opening Price", $"${quote.OpeningPrice:F2}")
+                        .AddField("Previous Close", $"${quote.ClosingPrice:F2}")
+                        .AddField("High", $"${quote.High:F2}")
+                        .AddField("Low", $"${quote.Low:F2}")
                         .WithColor(Color.Blue)
                         .WithFooter("Data provided by Finnhub")
                         .Build()
                 );
             }
         }
-        catch (Exception ex)
+        catch (ArgumentException ex) // Catch validation errors from TickerSymbol or other ArgumentExceptions
         {
-            _logger.LogError($"Error building message: {ex.Message}");
+            _logger.LogWarning(ex, "Invalid ticker format for /quote command: {Ticker}", ticker);
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("Input Error")
+                    .WithDescription($"The ticker '{ticker}' is invalid. Reason: {ex.Message}")
+                    .WithColor(Color.Orange)
+                    .Build()
+            );
+        }
+        catch (Exception ex) // Catch any other unexpected errors
+        {
+            _logger.LogError(
+                ex,
+                "An unexpected error occurred during /quote command for ticker: {Ticker}",
+                ticker
+            );
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("System Error")
+                    .WithDescription(
+                        "An unexpected error occurred while processing your request. Please try again later."
+                    )
+                    .WithFooter("If this persists, contact support.")
+                    .WithColor(Color.Red)
+                    .Build()
+            );
         }
     }
 }
