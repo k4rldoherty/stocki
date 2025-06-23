@@ -1,10 +1,11 @@
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
 using Stocki.Domain.Models;
 
 namespace Stocki.Application.Queries.Price;
 
-public class StockQuoteQueryHandler
+public class StockQuoteQueryHandler : IRequestHandler<StockQuoteQuery, StockQuote?>
 {
     private readonly IFinnhubClient _finnhubClient;
     private readonly ILogger<StockQuoteQueryHandler> _logger;
@@ -15,12 +16,17 @@ public class StockQuoteQueryHandler
         _logger = l;
     }
 
-    public async Task<StockQuote?> HandleAsync(StockQuoteQuery q)
+    public async Task<StockQuote?> Handle(
+        StockQuoteQuery request,
+        CancellationToken cancellationToken
+    )
     {
-        var domainOverview = await _finnhubClient.GetStockQuoteAsync(q);
+        StockQuote? domainOverview = await _finnhubClient.GetStockQuoteAsync(
+            request,
+            cancellationToken
+        );
         if (domainOverview == null)
         {
-            _logger.LogWarning("Item returned from infra layer was null");
             return null;
         }
         return domainOverview;

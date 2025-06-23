@@ -1,8 +1,10 @@
+using MediatR;
+using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;
 
 namespace Stocki.Application.Queries.Price;
 
-public record StockQuoteQuery
+public record StockQuoteQuery : IRequest<StockQuote?>
 {
     public TickerSymbol Symbol { get; set; }
 

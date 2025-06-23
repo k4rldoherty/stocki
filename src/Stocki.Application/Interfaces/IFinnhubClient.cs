@@ -5,5 +5,5 @@ namespace Stocki.Application.Interfaces;
 
 public interface IFinnhubClient
 {
-    Task<StockQuote?> GetStockQuoteAsync(StockQuoteQuery q);
+    Task<StockQuote?> GetStockQuoteAsync(StockQuoteQuery q, CancellationToken t);
 }
