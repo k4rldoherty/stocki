@@ -34,8 +34,7 @@ public class FinnhubClient : IFinnhubClient
 
     public async Task<StockQuote?> GetStockQuoteAsync(StockQuoteQuery q, CancellationToken t)
     {
-        var url =
-            $"{_settings.Value.BaseUrl}quote?symbol={q.Symbol.Value}&token={_settings.Value.ApiKey}";
+        var url = $"{_settings.Value.BaseUrl}quote?symbol={q.Symbol.Value}";
         if (_cache.TryGetValue(url, out StockQuote? CacheRes))
         {
             _logger.LogInformation($"Query retrieved from cache: {url}");
@@ -64,7 +63,6 @@ public class FinnhubClient : IFinnhubClient
                 return null;
             }
 
-            // Uses static mapped class
             var returnObj = FinnhubMappingHelper.MapStockQuote(
                 stockQuoteDTO,
                 q.Symbol.Value,

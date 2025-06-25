@@ -62,6 +62,10 @@ builder.ConfigureServices(
             {
                 client.BaseAddress = new Uri(finnhubClientSettings.BaseUrl);
             }
+            client.DefaultRequestHeaders.Add(
+                "X-Finnhub-Token",
+                context.Configuration.GetSection("Finnhub").GetSection("ApiKey").Value
+            );
         });
         //
         // --- Discord Client Settings

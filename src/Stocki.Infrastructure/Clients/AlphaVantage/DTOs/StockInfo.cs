@@ -2,6 +2,9 @@ using Newtonsoft.Json; // Use Newtonsoft.Json's attribute
 
 namespace Stocki.Infrastructure.Clients.DTOs;
 
+/// <summary>
+/// The raw object which is retrieved from the api.
+/// </summary>
 public record AVStockOverviewDTO(
     [JsonProperty("Symbol")] string? Symbol, // Changed to string?
     [JsonProperty("AssetType")] string? AssetType,
