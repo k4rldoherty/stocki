@@ -30,7 +30,7 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
 
         try
         {
-            TickerSymbol symbol = new TickerSymbol(ticker);
+            var symbol = new TickerSymbol(ticker);
             StockOverviewQuery query = new(symbol);
 
             _logger.LogInformation("Received /overview command for ticker {Ticker}", ticker);
