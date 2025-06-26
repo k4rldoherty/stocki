@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
+using Stocki.Application.Queries.News;
 using Stocki.Application.Queries.Price;
 using Stocki.Domain.Models;
 using Stocki.Infrastructure.Clients.Finnhub;
@@ -74,7 +75,72 @@ public class FinnhubClient : IFinnhubClient
                 return null;
             }
             _logger.LogInformation("Object mapped successfully");
-            _cache.Set(url, returnObj);
+            _cache.Set(url, returnObj, absoluteExpiration: DateTime.UtcNow.AddMinutes(5));
+            return returnObj;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex.Message);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            return null;
+        }
+    }
+
+    public async Task<List<StockNewsArticle>?> GetCompanyNewsAsync(
+        StockNewsQuery q,
+        CancellationToken c
+    )
+    {
+        try
+        {
+            // TODO: Make the to and from dates changeable for older news / specific ranges
+            var url =
+                $"{_settings.Value.BaseUrl}company-news?symbol={q.Symbol.Value}&from={DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-dd")}&to={DateTime.UtcNow.ToString("yyyy-MM-dd")}";
+            if (_cache.TryGetValue($"news-{q.Symbol.Value}", out List<StockNewsArticle>? CacheRes))
+            {
+                _logger.LogInformation("Retrieved from cache");
+                return CacheRes;
+            }
+            var res = await _client.GetAsync(url, c);
+            if (res.StatusCode != HttpStatusCode.OK)
+            {
+                _logger.LogWarning($"API returned status code {res.StatusCode}");
+                return null;
+            }
+            string resStr = await res.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(resStr) || resStr.Equals("[]"))
+            {
+                _logger.LogError("Response was empty");
+                return null;
+            }
+
+            List<FHStockNewsArticleDTO>? dto = JsonConvert.DeserializeObject<
+                List<FHStockNewsArticleDTO>
+            >(resStr);
+
+            if (dto == null)
+            {
+                _logger.LogWarning("Serialized object was null");
+                return null;
+            }
+
+            var returnObj = FinnhubMappingHelper.MapStockNews(dto, q.Symbol.Value, _logger);
+
+            if (returnObj == null)
+            {
+                _logger.LogError("Problem mapping object");
+                return null;
+            }
+            _logger.LogInformation("Object mapped successfully");
+            _cache.Set(
+                $"news-{q.Symbol.Value}",
+                returnObj,
+                absoluteExpiration: DateTime.UtcNow.AddDays(1)
+            );
             return returnObj;
         }
         catch (JsonException ex)

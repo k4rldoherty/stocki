@@ -55,4 +55,60 @@ public static class FinnhubMappingHelper
 
         return quote;
     }
+
+    public static List<StockNewsArticle>? MapStockNews(
+        List<FHStockNewsArticleDTO> dtoList,
+        string symbol,
+        ILogger logger
+    )
+    {
+        List<StockNewsArticle>? articles = new();
+        int i = 0;
+        while (articles.Count() <= 3)
+        {
+            var a = dtoList[i];
+            if (string.IsNullOrEmpty(a.TimeStamp))
+            {
+                logger.LogWarning("Date is invalid or empty");
+                return null;
+            }
+            if (string.IsNullOrEmpty(a.Headline))
+            {
+                logger.LogWarning("Headline is invalid or empty");
+                return null;
+            }
+            if (string.IsNullOrEmpty(a.Image))
+            {
+                logger.LogWarning("Image is invalid or empty");
+            }
+            if (string.IsNullOrEmpty(a.Source))
+            {
+                logger.LogWarning("Source is invalid or empty");
+                return null;
+            }
+            if (string.IsNullOrEmpty(a.Summary))
+            {
+                logger.LogWarning("Summary is invalid or empty");
+                return null;
+            }
+            if (string.IsNullOrEmpty(a.Url))
+            {
+                logger.LogWarning("Url is invalid or empty");
+                return null;
+            }
+            var newArticle = new StockNewsArticle(
+                a.TimeStamp,
+                a.Headline,
+                a.Image,
+                a.Source,
+                a.Summary,
+                a.Url
+            );
+
+            articles.Add(newArticle);
+            i++;
+        }
+
+        return articles;
+    }
 }
