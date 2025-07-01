@@ -59,7 +59,7 @@ public class AlphaVantageClient : IAlphaVantageClient
             string resStr = await res.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(resStr) || resStr.Equals("{}"))
                 return ApiResponse<StockOverview>.Failure(
-                    $"The ticker {q.Symbol.Value} is invalid. Try again",
+                    $"No data retrieved for this ticker",
                     res.StatusCode
                 );
 
@@ -69,7 +69,8 @@ public class AlphaVantageClient : IAlphaVantageClient
             {
                 _logger.LogWarning("Serialized object was null");
                 return ApiResponse<StockOverview>.Failure(
-                    $"Failed to serialize Stock Overview DTO object for ticker {q.Symbol.Value}."
+                    $"Failed to serialize Stock Overview DTO object for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.InternalServerError
                 );
             }
 
@@ -82,10 +83,12 @@ public class AlphaVantageClient : IAlphaVantageClient
             if (returnObj is null)
             {
                 return ApiResponse<StockOverview>.Failure(
-                    $"Failed to parse Stock Overview object for ticker {q.Symbol.Value}."
+                    $"Failed to parse Stock Overview object for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.InternalServerError
                 );
             }
             _cache.Set(url, returnObj);
+            _logger.LogInformation("Request to api succeeded and data cached successfully");
             return ApiResponse<StockOverview>.Success(returnObj, HttpStatusCode.OK);
         }
         catch (JsonException ex)

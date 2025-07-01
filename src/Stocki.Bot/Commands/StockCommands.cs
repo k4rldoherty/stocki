@@ -2,6 +2,7 @@ using Discord;
 using Discord.Interactions;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Stocki.Application.Exceptions;
 using Stocki.Application.Queries.Overview;
 using Stocki.Application.Queries.Price;
 using Stocki.Domain.Models;
@@ -37,37 +38,14 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
 
             StockOverview? stockOverview = await _mediator.Send(query, CancellationToken.None);
 
-            var embedBuilder = new EmbedBuilder();
-
-            if (stockOverview == null)
-            {
-                _logger.LogWarning(
-                    "The /overview request failed for ticker {Ticker}. No data found.",
-                    ticker
-                );
-                await FollowupAsync(
-                    embed: embedBuilder
-                        .WithTitle("Error")
-                        .WithDescription(
-                            $"Could not retrieve detailed overview for **{ticker.ToUpperInvariant()}**."
-                        )
-                        .AddField(
-                            "Why?",
-                            "The ticker could be incorrect, or maybe Stocki is playing up, check again later and if the problem persists contact the developer"
-                        )
-                        .WithFooter("Stocki 2025")
-                        .WithColor(Color.Red)
-                        .Build()
-                );
-            }
-            else
+            if (stockOverview is not null)
             {
                 _logger.LogInformation(
                     "The /overview request succeeded for ticker {Ticker}",
                     ticker
                 );
                 await FollowupAsync(
-                    embed: embedBuilder
+                    embed: new EmbedBuilder()
                         .WithTitle($"{stockOverview.Name} ({stockOverview.Symbol})")
                         .WithDescription(stockOverview.Description)
                         .AddField("Sector", stockOverview.Sector ?? "N/A")
@@ -95,9 +73,30 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
                 );
             }
         }
+        catch (StockDataNotFoundException ex)
+        {
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("Information Not Found") // Clear, user-centric title
+                    .AddField("Message", ex.UserFriendlyMessage) // Directly use the user-friendly message from the exception
+                    .WithColor(Color.Orange) // A warning/informational color
+                    .WithFooter("Stocki 2025")
+                    .Build()
+            );
+        }
+        catch (ExternalServiceException ex)
+        {
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("Error")
+                    .AddField("Message", ex.UserFriendlyMessage)
+                    .WithColor(Color.Red) // Critical error color
+                    .WithFooter("If this persists, please contact support.")
+                    .Build()
+            );
+        }
         catch (ArgumentException ex) // Catch validation errors from TickerSymbol or other ArgumentExceptions
         {
-            _logger.LogWarning(ex, "Invalid ticker format for /overview command: {Ticker}", ticker);
             await FollowupAsync(
                 embed: new EmbedBuilder()
                     .WithTitle("Input Error")
@@ -108,11 +107,7 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
         }
         catch (Exception ex) // Catch any other unexpected errors
         {
-            _logger.LogError(
-                ex,
-                "An unexpected error occurred during /overview command for ticker: {Ticker}",
-                ticker
-            );
+            _logger.LogError(ex.Message);
             await FollowupAsync(
                 embed: new EmbedBuilder()
                     .WithTitle("System Error")
