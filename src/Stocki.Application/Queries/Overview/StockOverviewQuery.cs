@@ -1,10 +1,11 @@
 using MediatR;
 using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;
+using Stocki.Shared.Models;
 
 namespace Stocki.Application.Queries.Overview;
 
-public record StockOverviewQuery : IRequest<StockOverview?>
+public record StockOverviewQuery : IRequest<StockOverview>
 {
     public TickerSymbol Symbol { get; set; }
 

@@ -8,7 +8,9 @@ public record TickerSymbol
     {
         if (ticker.Length < 1 || ticker.Length > 5 || string.IsNullOrEmpty(ticker))
         {
-            throw new ArgumentNullException("Ticker must be present");
+            throw new ArgumentException(
+                "Ticker must be a valid sequence of charachters between 1-5 letters long"
+            );
         }
         Value = ticker.ToUpper();
     }

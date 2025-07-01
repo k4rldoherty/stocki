@@ -52,8 +52,8 @@ public class StockCommands : InteractionModuleBase<SocketInteractionContext>
                             $"Could not retrieve detailed overview for **{ticker.ToUpperInvariant()}**."
                         )
                         .AddField(
-                            "Reason",
-                            "The ticker symbol might be incorrect, or data is temporarily unavailable. Please check the ticker and try again."
+                            "Why?",
+                            "The ticker could be incorrect, or maybe Stocki is playing up, check again later and if the problem persists contact the developer"
                         )
                         .WithFooter("Stocki 2025")
                         .WithColor(Color.Red)

@@ -1,9 +1,13 @@
 using Stocki.Application.Queries.Overview;
 using Stocki.Domain.Models;
+using Stocki.Shared.Models;
 
 namespace Stocki.Application.Interfaces;
 
 public interface IAlphaVantageClient
 {
-    public Task<StockOverview?> GetStockOverviewAsync(StockOverviewQuery q, CancellationToken t);
+    public Task<ApiResponse<StockOverview>> GetStockOverviewAsync(
+        StockOverviewQuery q,
+        CancellationToken t
+    );
 }
