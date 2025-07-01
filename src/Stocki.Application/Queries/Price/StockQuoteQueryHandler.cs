@@ -1,7 +1,10 @@
+using System.Net;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
+using Stocki.Application.Utilities;
 using Stocki.Domain.Models;
+using Stocki.Shared.Models;
 
 namespace Stocki.Application.Queries.Price;
 
@@ -21,14 +24,56 @@ public class StockQuoteQueryHandler : IRequestHandler<StockQuoteQuery, StockQuot
         CancellationToken cancellationToken
     )
     {
-        StockQuote? domainOverview = await _finnhubClient.GetStockQuoteAsync(
+        ApiResponse<StockQuote> Response = await _finnhubClient.GetStockQuoteAsync(
             request,
             cancellationToken
         );
-        if (domainOverview == null)
+        if (!Response.IsSuccess)
         {
-            return null;
+            if (Response.StatusCode != HttpStatusCode.OK)
+            {
+                throw ExceptionGenerator.GenerateNon200StatusCodeException(
+                    Response.StatusCode,
+                    "quote",
+                    request.Symbol.Value,
+                    Response.Message
+                );
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "No stock quote data returned from Finnhub for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                throw ExceptionGenerator.GenerateDataNotFoundException(
+                    "quote",
+                    request.Symbol.Value,
+                    Response.Message ?? "The data could not be retrieved"
+                );
+            }
         }
-        return domainOverview;
+        else
+        {
+            if (Response.Data is null)
+            {
+                _logger.LogWarning(
+                    "Successfully retrieved response from API, but no stock quote data was found for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                throw ExceptionGenerator.GenerateDataNotFoundException(
+                    "quote",
+                    request.Symbol.Value,
+                    Response.Message ?? "No stock quote data available."
+                );
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Successfully retrieved stock quote for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                return Response.Data;
+            }
+        }
     }
 }

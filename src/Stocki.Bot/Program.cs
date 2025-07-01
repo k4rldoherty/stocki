@@ -85,7 +85,6 @@ builder.ConfigureServices(
         ));
         // Hosted service for bot startup
         services.AddHostedService<BotStartupService>();
-        services.AddSingleton<StockCommands>();
         services.AddSingleton<InputHandlerService>();
     }
 );
