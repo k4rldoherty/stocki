@@ -1,7 +1,10 @@
+using System.Net;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
+using Stocki.Application.Utilities;
 using Stocki.Domain.Models;
+using Stocki.Shared.Models;
 
 namespace Stocki.Application.Queries.News;
 
@@ -22,24 +25,56 @@ public class StockNewsQueryHandler : IRequestHandler<StockNewsQuery, List<StockN
     )
     {
         _logger.LogDebug("Handling StockNewsQuery for symbol: {Symbol}", request.Symbol.Value);
-        List<StockNewsArticle>? domainNewsArticles = await _finnhubClient.GetCompanyNewsAsync(
+        ApiResponse<List<StockNewsArticle>> Response = await _finnhubClient.GetCompanyNewsAsync(
             request,
             cancellationToken
         );
-
-        if (domainNewsArticles == null)
+        if (!Response.IsSuccess)
         {
-            _logger.LogWarning(
-                "No stock news data returned from Finnhub for symbol: {Symbol}",
-                request.Symbol.Value
-            );
-            return null;
+            if (Response.StatusCode != HttpStatusCode.OK)
+            {
+                throw ExceptionGenerator.GenerateNon200StatusCodeException(
+                    Response.StatusCode,
+                    "news",
+                    request.Symbol.Value,
+                    Response.Message
+                );
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "No stock news data returned from Finnhub for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                throw ExceptionGenerator.GenerateDataNotFoundException(
+                    "news",
+                    request.Symbol.Value,
+                    Response.Message ?? "The data could not be retrieved"
+                );
+            }
         }
-
-        _logger.LogInformation(
-            "Successfully retrieved stock overview for symbol: {Symbol}",
-            request.Symbol.Value
-        );
-        return domainNewsArticles;
+        else
+        {
+            if (Response.Data is null)
+            {
+                _logger.LogWarning(
+                    "Successfully retrieved response from API, but no stock news data was found for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                throw ExceptionGenerator.GenerateDataNotFoundException(
+                    "news",
+                    request.Symbol.Value,
+                    Response.Message ?? "No stock news data available."
+                );
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Successfully retrieved stock news for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                return Response.Data;
+            }
+        }
     }
 }

@@ -1,7 +1,10 @@
+using System.Net;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
+using Stocki.Application.Utilities;
 using Stocki.Domain.Models;
+using Stocki.Shared.Models;
 
 namespace Stocki.Application.Queries.Overview;
 
@@ -25,24 +28,57 @@ public class StockOverviewQueryHandler : IRequestHandler<StockOverviewQuery, Sto
     )
     {
         _logger.LogDebug("Handling StockOverviewQuery for symbol: {Symbol}", request.Symbol.Value);
-        StockOverview? domainOverview = await _alphaVantageClient.GetStockOverviewAsync(
+        ApiResponse<StockOverview> Response = await _alphaVantageClient.GetStockOverviewAsync(
             request,
             cancellationToken
         );
 
-        if (domainOverview == null)
+        if (!Response.IsSuccess)
         {
-            _logger.LogWarning(
-                "No stock overview data returned from AlphaVantage for symbol: {Symbol}",
-                request.Symbol.Value
-            );
-            return null;
+            if (Response.StatusCode != HttpStatusCode.OK)
+            {
+                throw ExceptionGenerator.GenerateNon200StatusCodeException(
+                    Response.StatusCode,
+                    "overview",
+                    request.Symbol.Value,
+                    Response.Message
+                );
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "No stock overview data returned from AlphaVantage for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                throw ExceptionGenerator.GenerateDataNotFoundException(
+                    "overview",
+                    request.Symbol.Value,
+                    Response.Message ?? "The data could not be retrieved"
+                );
+            }
         }
-
-        _logger.LogInformation(
-            "Successfully retrieved stock overview for symbol: {Symbol}",
-            request.Symbol.Value
-        );
-        return domainOverview;
+        else
+        {
+            if (Response.Data is null)
+            {
+                _logger.LogWarning(
+                    "Successfully retrieved response from API, but no stock overview data was found for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                throw ExceptionGenerator.GenerateDataNotFoundException(
+                    "StockOverviewQuery",
+                    request.Symbol.Value,
+                    Response.Message ?? "No stock overview data available."
+                );
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Successfully retrieved stock overview for symbol: {Symbol}",
+                    request.Symbol.Value
+                );
+                return Response.Data;
+            }
+        }
     }
 }

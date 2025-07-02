@@ -9,6 +9,7 @@ using Stocki.Domain.Models;
 using Stocki.Infrastructure.Clients.AlphaVantage;
 using Stocki.Infrastructure.Clients.DTOs;
 using Stocki.Shared.Config;
+using Stocki.Shared.Models;
 
 namespace Stocki.Infrastructure.Clients;
 
@@ -32,17 +33,17 @@ public class AlphaVantageClient : IAlphaVantageClient
         _settings = settings;
     }
 
-    public async Task<StockOverview?> GetStockOverviewAsync(
+    public async Task<ApiResponse<StockOverview>> GetStockOverviewAsync(
         StockOverviewQuery q,
         CancellationToken token
     )
     {
         var url =
             $"{_settings.Value.BaseUrl}query?function=OVERVIEW&symbol={q.Symbol.Value}&apikey={_settings.Value.ApiKey}";
-        if (_cache.TryGetValue(url, out StockOverview? CacheRes))
+        if (_cache.TryGetValue(url, out StockOverview? CacheRes) && CacheRes is not null)
         {
             _logger.LogInformation($"Query retrieved from cache: {url}");
-            return CacheRes;
+            return ApiResponse<StockOverview>.Success(CacheRes);
         }
         try
         {
@@ -50,34 +51,61 @@ public class AlphaVantageClient : IAlphaVantageClient
             if (res.StatusCode != HttpStatusCode.OK)
             {
                 _logger.LogWarning($"API returned status code {res.StatusCode}");
-                return null;
+                return ApiResponse<StockOverview>.Failure(
+                    $"Alpha Vantage returned status code: {res.StatusCode}",
+                    res.StatusCode
+                );
             }
             string resStr = await res.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(resStr) || resStr.Equals("{}"))
-                return null;
+                return ApiResponse<StockOverview>.Failure(
+                    $"No data retrieved for this ticker",
+                    res.StatusCode
+                );
 
             AVStockOverviewDTO? avObj = JsonConvert.DeserializeObject<AVStockOverviewDTO>(resStr);
 
             if (avObj == null)
             {
                 _logger.LogWarning("Serialized object was null");
-                return null;
+                return ApiResponse<StockOverview>.Failure(
+                    $"Failed to serialize Stock Overview DTO object for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.InternalServerError
+                );
             }
 
             // Uses static mapped class
-            var returnObj = AlphaVantageMappingHelper.MapOverview(avObj, q.Symbol.Value, _logger);
+            StockOverview? returnObj = AlphaVantageMappingHelper.MapOverview(
+                avObj,
+                q.Symbol.Value,
+                _logger
+            );
+            if (returnObj is null)
+            {
+                return ApiResponse<StockOverview>.Failure(
+                    $"Failed to parse Stock Overview object for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.InternalServerError
+                );
+            }
             _cache.Set(url, returnObj);
-            return returnObj;
+            _logger.LogInformation("Request to api succeeded and data cached successfully");
+            return ApiResponse<StockOverview>.Success(returnObj, HttpStatusCode.OK);
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex.Message);
-            return null;
+            return ApiResponse<StockOverview>.Failure(
+                ex.Message,
+                HttpStatusCode.InternalServerError
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
-            return null;
+            return ApiResponse<StockOverview>.Failure(
+                ex.Message,
+                HttpStatusCode.InternalServerError
+            );
         }
     }
 }
