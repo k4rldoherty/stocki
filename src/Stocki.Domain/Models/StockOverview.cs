@@ -1,51 +1,151 @@
-namespace Stocki.Domain.Models;
+public class StockOverview
+{
+    public string? Name { get; set; }
+    public string? Symbol { get; set; }
+    public string? Description { get; set; }
+    public string? AssetType { get; set; }
+    public string? Currency { get; set; }
+    public string? Sector { get; set; }
+    public string? Industry { get; set; }
+    public string? FiscalYearEnd { get; set; }
+    public DateTime? LatestQuarter { get; set; }
+    public long? MarketCapitalization { get; set; }
+    public long? EBITDA { get; set; }
+    public decimal? PERatio { get; set; }
+    public decimal? PEGRatio { get; set; }
+    public decimal? BookValue { get; set; }
+    public decimal? DividendPerShare { get; set; }
+    public decimal? DividendYield { get; set; }
+    public decimal? EPS { get; set; }
+    public decimal? RevenuePerShareTTM { get; set; }
+    public decimal? ProfitMargin { get; set; }
+    public decimal? OperatingMarginTTM { get; set; }
+    public decimal? ReturnOnAssetsTTM { get; set; }
+    public decimal? ReturnOnEquityTTM { get; set; }
+    public long? RevenueTTM { get; set; }
+    public long? GrossProfitTTM { get; set; }
+    public decimal? DilutedEPSTTM { get; set; }
+    public decimal? QuarterlyEarningsGrowthYOY { get; set; }
+    public decimal? QuarterlyRevenueGrowthYOY { get; set; }
+    public decimal? AnalystTargetPrice { get; set; }
+    public int? AnalystRatingStrongBuy { get; set; }
+    public int? AnalystRatingBuy { get; set; }
+    public int? AnalystRatingHold { get; set; }
+    public int? AnalystRatingSell { get; set; }
+    public int? AnalystRatingStrongSell { get; set; }
+    public decimal? TrailingPE { get; set; }
+    public decimal? ForwardPE { get; set; }
+    public decimal? PriceToSalesRatioTTM { get; set; }
+    public decimal? PriceToBookRatio { get; set; }
+    public decimal? EVToRevenue { get; set; }
+    public decimal? EVToEBITDA { get; set; }
+    public decimal? Beta { get; set; }
+    public decimal? FiftyTwoWeekHigh { get; set; }
+    public decimal? FiftyTwoWeekLow { get; set; }
+    public decimal? FiftyDayMovingAverage { get; set; }
+    public decimal? TwoHundredDayMovingAverage { get; set; }
+    public long? SharesOutstanding { get; set; }
+    public DateTime? DividendDate { get; set; }
+    public DateTime? ExDividendDate { get; set; }
 
-public record StockOverview(
-    string? Name,
-    string Symbol, // Assuming Symbol is always present and a string
-    string? Description,
-    string? AssetType,
-    string? Currency,
-    string? Sector,
-    string? Industry,
-    string? FiscalYearEnd, // AlphaVantage returns this as a string like "December"
-    DateTime? LatestQuarter, // Should be parsed to DateTime
-    long? MarketCapitalization, // Should be parsed to long
-    long? EBITDA, // Should be parsed to long
-    decimal? PERatio, // Should be parsed to decimal
-    decimal? PEGRatio, // Should be parsed to decimal
-    decimal? BookValue, // Should be parsed to decimal
-    decimal? DividendPerShare, // Should be parsed to decimal, handling "None"
-    decimal? DividendYield, // Should be parsed to decimal, handling "None"
-    decimal? EPS, // Should be parsed to decimal
-    decimal? RevenuePerShareTTM, // Should be parsed to decimal
-    decimal? ProfitMargin, // Should be parsed to decimal
-    decimal? OperatingMarginTTM, // Should be parsed to decimal
-    decimal? ReturnOnAssetsTTM, // Should be parsed to decimal
-    decimal? ReturnOnEquityTTM, // Should be parsed to decimal
-    long? RevenueTTM, // Should be parsed to long
-    long? GrossProfitTTM, // Should be parsed to long
-    decimal? DilutedEPSTTM, // Should be parsed to decimal
-    decimal? QuarterlyEarningsGrowthYOY, // Should be parsed to decimal
-    decimal? QuarterlyRevenueGrowthYOY, // Should be parsed to decimal
-    decimal? AnalystTargetPrice, // Should be parsed to decimal
-    int? AnalystRatingStrongBuy, // Should be parsed to int
-    int? AnalystRatingBuy, // Should be parsed to int
-    int? AnalystRatingHold, // Should be parsed to int
-    int? AnalystRatingSell, // Should be parsed to int
-    int? AnalystRatingStrongSell, // Should be parsed to int
-    decimal? TrailingPE, // Should be parsed to decimal
-    decimal? ForwardPE, // Should be parsed to decimal
-    decimal? PriceToSalesRatioTTM, // Should be parsed to decimal
-    decimal? PriceToBookRatio, // Should be parsed to decimal
-    decimal? EVToRevenue, // Should be parsed to decimal
-    decimal? EVToEBITDA, // Should be parsed to decimal
-    decimal? Beta, // Should be parsed to decimal
-    decimal? FiftyTwoWeekHigh, // Should be parsed to decimal
-    decimal? FiftyTwoWeekLow, // Should be parsed to decimal
-    decimal? FiftyDayMovingAverage, // Should be parsed to decimal
-    decimal? TwoHundredDayMovingAverage, // Should be parsed to decimal
-    long? SharesOutstanding, // Should be parsed to long
-    DateTime? DividendDate, // Should be parsed to DateTime, handling "None"
-    DateTime? ExDividendDate // Should be parsed to DateTime, handling "None"
-);
+    public StockOverview() { }
+
+    public StockOverview(
+        string? Name,
+        string? Symbol,
+        string? Description,
+        string? AssetType,
+        string? Currency,
+        string? Sector,
+        string? Industry,
+        string? FiscalYearEnd,
+        DateTime? LatestQuarter,
+        long? MarketCapitalization,
+        long? EBITDA,
+        decimal? PERatio,
+        decimal? PEGRatio,
+        decimal? BookValue,
+        decimal? DividendPerShare,
+        decimal? DividendYield,
+        decimal? EPS,
+        decimal? RevenuePerShareTTM,
+        decimal? ProfitMargin,
+        decimal? OperatingMarginTTM,
+        decimal? ReturnOnAssetsTTM,
+        decimal? ReturnOnEquityTTM,
+        long? RevenueTTM,
+        long? GrossProfitTTM,
+        decimal? DilutedEPSTTM,
+        decimal? QuarterlyEarningsGrowthYOY,
+        decimal? QuarterlyRevenueGrowthYOY,
+        decimal? AnalystTargetPrice,
+        int? AnalystRatingStrongBuy,
+        int? AnalystRatingBuy,
+        int? AnalystRatingHold,
+        int? AnalystRatingSell,
+        int? AnalystRatingStrongSell,
+        decimal? TrailingPE,
+        decimal? ForwardPE,
+        decimal? PriceToSalesRatioTTM,
+        decimal? PriceToBookRatio,
+        decimal? EVToRevenue,
+        decimal? EVToEBITDA,
+        decimal? Beta,
+        decimal? FiftyTwoWeekHigh,
+        decimal? FiftyTwoWeekLow,
+        decimal? FiftyDayMovingAverage,
+        decimal? TwoHundredDayMovingAverage,
+        long? SharesOutstanding,
+        DateTime? DividendDate,
+        DateTime? ExDividendDate
+    )
+    {
+        this.Name = Name;
+        this.Symbol = Symbol;
+        this.Description = Description;
+        this.AssetType = AssetType;
+        this.Currency = Currency;
+        this.Sector = Sector;
+        this.Industry = Industry;
+        this.FiscalYearEnd = FiscalYearEnd;
+        this.LatestQuarter = LatestQuarter;
+        this.MarketCapitalization = MarketCapitalization;
+        this.EBITDA = EBITDA;
+        this.PERatio = PERatio;
+        this.PEGRatio = PEGRatio;
+        this.BookValue = BookValue;
+        this.DividendPerShare = DividendPerShare;
+        this.DividendYield = DividendYield;
+        this.EPS = EPS;
+        this.RevenuePerShareTTM = RevenuePerShareTTM;
+        this.ProfitMargin = ProfitMargin;
+        this.OperatingMarginTTM = OperatingMarginTTM;
+        this.ReturnOnAssetsTTM = ReturnOnAssetsTTM;
+        this.ReturnOnEquityTTM = ReturnOnEquityTTM;
+        this.RevenueTTM = RevenueTTM;
+        this.GrossProfitTTM = GrossProfitTTM;
+        this.DilutedEPSTTM = DilutedEPSTTM;
+        this.QuarterlyEarningsGrowthYOY = QuarterlyEarningsGrowthYOY;
+        this.QuarterlyRevenueGrowthYOY = QuarterlyRevenueGrowthYOY;
+        this.AnalystTargetPrice = AnalystTargetPrice;
+        this.AnalystRatingStrongBuy = AnalystRatingStrongBuy;
+        this.AnalystRatingBuy = AnalystRatingBuy;
+        this.AnalystRatingHold = AnalystRatingHold;
+        this.AnalystRatingSell = AnalystRatingSell;
+        this.AnalystRatingStrongSell = AnalystRatingStrongSell;
+        this.TrailingPE = TrailingPE;
+        this.ForwardPE = ForwardPE;
+        this.PriceToSalesRatioTTM = PriceToSalesRatioTTM;
+        this.PriceToBookRatio = PriceToBookRatio;
+        this.EVToRevenue = EVToRevenue;
+        this.EVToEBITDA = EVToEBITDA;
+        this.Beta = Beta;
+        this.FiftyTwoWeekHigh = FiftyTwoWeekHigh;
+        this.FiftyTwoWeekLow = FiftyTwoWeekLow;
+        this.FiftyDayMovingAverage = FiftyDayMovingAverage;
+        this.TwoHundredDayMovingAverage = TwoHundredDayMovingAverage;
+        this.SharesOutstanding = SharesOutstanding;
+        this.DividendDate = DividendDate;
+        this.ExDividendDate = ExDividendDate;
+    }
+}

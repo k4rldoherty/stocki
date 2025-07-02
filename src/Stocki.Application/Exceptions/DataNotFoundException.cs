@@ -5,8 +5,8 @@ public class StockDataNotFoundException : Exception
     public string UserFriendlyMessage { get; }
 
     public StockDataNotFoundException(
-        string message,
         string userFriendlyMessage,
+        string message,
         Exception? innerException = null
     )
         : base(message, innerException)
