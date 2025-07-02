@@ -3,11 +3,13 @@ namespace Stocki.Domain.Models;
 public record StockNewsArticle
 {
     public DateTime DateOfArticle;
-    public String Headline;
-    public String? ImageUrl;
-    public String Source;
-    public String Summary;
-    public String Url;
+    public String Headline = string.Empty;
+    public String ImageUrl = string.Empty;
+    public String Source = string.Empty;
+    public String Summary = string.Empty;
+    public String Url = string.Empty;
+
+    public StockNewsArticle() { }
 
     public StockNewsArticle(String Ts, String H, String I, String S, String Summ, String U)
     {
