@@ -109,7 +109,7 @@ public class FinnhubClient : IFinnhubClient
         }
     }
 
-    public async Task<List<StockNewsArticle>?> GetCompanyNewsAsync(
+    public async Task<ApiResponse<List<StockNewsArticle>>> GetCompanyNewsAsync(
         StockNewsQuery q,
         CancellationToken c
     )
@@ -119,22 +119,31 @@ public class FinnhubClient : IFinnhubClient
             // TODO: Make the to and from dates changeable for older news / specific ranges
             var url =
                 $"{_settings.Value.BaseUrl}company-news?symbol={q.Symbol.Value}&from={DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-dd")}&to={DateTime.UtcNow.ToString("yyyy-MM-dd")}";
-            if (_cache.TryGetValue($"news-{q.Symbol.Value}", out List<StockNewsArticle>? CacheRes))
+            if (
+                _cache.TryGetValue($"news-{q.Symbol.Value}", out List<StockNewsArticle>? CacheRes)
+                && CacheRes != null
+            )
             {
                 _logger.LogInformation("Retrieved from cache");
-                return CacheRes;
+                return ApiResponse<List<StockNewsArticle>>.Success(CacheRes);
             }
             var res = await _client.GetAsync(url, c);
             if (res.StatusCode != HttpStatusCode.OK)
             {
                 _logger.LogWarning($"API returned status code {res.StatusCode}");
-                return null;
+                return ApiResponse<List<StockNewsArticle>>.Failure(
+                    $"Finnhub returned status code {res.StatusCode}",
+                    res.StatusCode
+                );
             }
             string resStr = await res.Content.ReadAsStringAsync();
             if (string.IsNullOrEmpty(resStr) || resStr.Equals("[]"))
             {
-                _logger.LogError("Response was empty");
-                return null;
+                _logger.LogWarning("Response was empty");
+                return ApiResponse<List<StockNewsArticle>>.Failure(
+                    $"No data retrieved for this ticker",
+                    res.StatusCode
+                );
             }
 
             List<FHStockNewsArticleDTO>? dto = JsonConvert.DeserializeObject<
@@ -144,7 +153,10 @@ public class FinnhubClient : IFinnhubClient
             if (dto == null)
             {
                 _logger.LogWarning("Serialized object was null");
-                return null;
+                return ApiResponse<List<StockNewsArticle>>.Failure(
+                    $"Failed to serialize Stock News DTO object for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.InternalServerError
+                );
             }
 
             var returnObj = FinnhubMappingHelper.MapStockNews(dto, q.Symbol.Value, _logger);
@@ -152,25 +164,34 @@ public class FinnhubClient : IFinnhubClient
             if (returnObj == null)
             {
                 _logger.LogError("Problem mapping object");
-                return null;
+                return ApiResponse<List<StockNewsArticle>>.Failure(
+                    $"Failed to parse Stock News object for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.InternalServerError
+                );
             }
-            _logger.LogInformation("Object mapped successfully");
             _cache.Set(
                 $"news-{q.Symbol.Value}",
                 returnObj,
                 absoluteExpiration: DateTime.UtcNow.AddDays(1)
             );
-            return returnObj;
+            _logger.LogInformation("Object mapped and data cached successfully");
+            return ApiResponse<List<StockNewsArticle>>.Success(returnObj, res.StatusCode);
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex.Message);
-            return null;
+            return ApiResponse<List<StockNewsArticle>>.Failure(
+                ex.Message,
+                HttpStatusCode.InternalServerError
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
-            return null;
+            return ApiResponse<List<StockNewsArticle>>.Failure(
+                ex.Message,
+                HttpStatusCode.InternalServerError
+            );
         }
     }
 }

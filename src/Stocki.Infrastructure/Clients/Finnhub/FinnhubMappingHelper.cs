@@ -8,7 +8,7 @@ public static class FinnhubMappingHelper
 {
     public static StockQuote? MapStockQuote(FHStockQuoteDTO fhObj, string symbol, ILogger logger)
     {
-        if (string.IsNullOrEmpty(fhObj.DifferencePercentage.ToString()))
+        if (string.IsNullOrEmpty(fhObj.DifferencePercentage))
         {
             logger.LogWarning($"Ticker {symbol} is invalid for item difference %");
             return null;

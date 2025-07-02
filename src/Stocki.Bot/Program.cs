@@ -8,7 +8,6 @@ using Microsoft.Extensions.Options;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Overview;
 using Stocki.Bot.Chat;
-using Stocki.Bot.Commands;
 using Stocki.Bot.Setup;
 using Stocki.Infrastructure.Clients;
 using Stocki.Shared.Config;
