@@ -44,14 +44,7 @@ public static class FinnhubMappingHelper
             return null;
         }
 
-        StockQuote quote = new(
-            Ticker: symbol,
-            CurrentPrice: currentPrice,
-            OpeningPrice: openingPrice,
-            ClosingPrice: previousClosePrice,
-            High: high,
-            Low: low
-        );
+        StockQuote quote = new(symbol, currentPrice, openingPrice, previousClosePrice, high, low);
 
         return quote;
     }
@@ -70,12 +63,10 @@ public static class FinnhubMappingHelper
             if (string.IsNullOrEmpty(a.TimeStamp))
             {
                 logger.LogWarning("Date is invalid or empty");
-                return null;
             }
             if (string.IsNullOrEmpty(a.Headline))
             {
                 logger.LogWarning("Headline is invalid or empty");
-                return null;
             }
             if (string.IsNullOrEmpty(a.Image))
             {
@@ -84,17 +75,14 @@ public static class FinnhubMappingHelper
             if (string.IsNullOrEmpty(a.Source))
             {
                 logger.LogWarning("Source is invalid or empty");
-                return null;
             }
             if (string.IsNullOrEmpty(a.Summary))
             {
                 logger.LogWarning("Summary is invalid or empty");
-                return null;
             }
             if (string.IsNullOrEmpty(a.Url))
             {
                 logger.LogWarning("Url is invalid or empty");
-                return null;
             }
             var newArticle = new StockNewsArticle(
                 a.TimeStamp,
