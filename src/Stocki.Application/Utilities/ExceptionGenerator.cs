@@ -1,4 +1,3 @@
-using System;
 using System.Net;
 using Stocki.Application.Exceptions; // Assuming your custom exceptions are here
 
@@ -27,10 +26,7 @@ public static class ExceptionGenerator
                 );
 
             case HttpStatusCode.NotFound:
-                if (
-                    !string.IsNullOrWhiteSpace(identifier)
-                    && !commandType.Contains("General", StringComparison.OrdinalIgnoreCase)
-                )
+                if (!string.IsNullOrWhiteSpace(identifier))
                 {
                     return new StockDataNotFoundException(
                         baseLogMessage,
@@ -99,7 +95,7 @@ public static class ExceptionGenerator
 
         return new StockDataNotFoundException(
             baseLogMessage,
-            $"Sorry, I couldn't find any data for '{identifier}'. {technicalReason}. Please check your input or try again.",
+            $"Sorry, I couldn't find any data for '{identifier}'. Please check your input or try again.",
             innerException
         );
     }

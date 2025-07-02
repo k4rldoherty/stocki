@@ -53,7 +53,7 @@ public class StockOverviewQueryHandler : IRequestHandler<StockOverviewQuery, Sto
                 throw ExceptionGenerator.GenerateDataNotFoundException(
                     "overview",
                     request.Symbol.Value,
-                    Response.Message ?? "The data could not be retrieved"
+                    "The data could not be retrieved"
                 );
             }
         }
@@ -68,7 +68,7 @@ public class StockOverviewQueryHandler : IRequestHandler<StockOverviewQuery, Sto
                 throw ExceptionGenerator.GenerateDataNotFoundException(
                     "StockOverviewQuery",
                     request.Symbol.Value,
-                    Response.Message ?? "No stock overview data available."
+                    "No stock overview data available."
                 );
             }
             else
