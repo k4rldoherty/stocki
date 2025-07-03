@@ -8,10 +8,11 @@ Stocki currently supports the following slash commands:
 
 * `/overview [ticker]`: Provides an in-depth financial overview of a specified stock ticker (e.g., `AAPL`, `MSFT`). This includes details like company description, sector, industry, market capitalization, P/E ratio, dividend yield, and 52-week high/low.
 * `/quote [ticker]`: Fetches real-time (or near real-time) quote information for a given stock ticker. This includes current price, open, close, high, low, and percentage change.
+* `/get-company-news [ticker]`: Gets the top x news articles for a given stock, containing a title, summary and link to the article.
 
 ## Technologies Used
 
-* **.NET 8 (C#):** The core framework for the bot's development.
+* **.NET 9 (C#):** The core framework for the bot's development.
 * **Discord.Net:** A powerful and flexible library for interacting with the Discord API.
 * **MediatR:** Implemented to facilitate a clear separation of concerns using the Mediator pattern for handling commands and queries.
 * **Microsoft.Extensions.Hosting:** For managing the bot's lifecycle as a hosted service.
@@ -22,6 +23,8 @@ Stocki currently supports the following slash commands:
 * **AlphaVantage API:** Used as a primary data source for stock overviews.
 * **Finnhub API:** Used as a primary data source for stock quotes.
 * **Memory Cache:** For efficient caching of API responses to reduce redundant calls.
+* **xUnit:** Unit testing framework
+* **Faker / Bogus:** Generating mock data for unit tests
 
 ## Architecture
 
@@ -42,26 +45,23 @@ This layered approach promotes:
 * **Testability:** Each layer can be easily tested in isolation.
 * **Maintainability:** Clear responsibilities make the codebase easier to understand and evolve.
 
-## Setup Instructions / Contributing
+## Contributing
 
-To run Stocki locally, you'll need to set up your Discord Bot application and obtain API keys for the financial data providers.
+To run Stocki locally, you'll need to obtain API keys for the financial data providers.
 
 ### Prerequisites
 
-* [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or newer installed.
+* [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) or newer installed.
 
-### 1. Discord Bot Setup
+### Quick Guide
+* Clone the repo
+* Run ```dotnet restore```
+* Run ```dotnet test```
+* Create a new feature branch
+* When you add a new feature - write some unit tests and do some manual tests
+* Create a pr!
 
-1.  Go to the [Discord Developer Portal](https://discord.com/developers/applications).
-2.  Create a new application.
-3.  Under the **Bot** section, click "Add Bot" and then "Yes, do it!".
-4.  Copy the **Bot Token**. Keep this token secure!
-5.  Under **OAuth2 > URL Generator**, select `bot` and `applications.commands` scopes.
-6.  Under **Bot Permissions**, grant your bot the `Send Messages` and `Use Slash Commands` permissions (and any others you deem necessary, though these are sufficient for basic functionality).
-7.  Copy the generated URL and paste it into your browser to add the bot to your Discord server.
-8.  Enable **PRESENCE INTENT**, **SERVER MEMBERS INTENT**, and **MESSAGE CONTENT INTENT** under the "Privileged Gateway Intents" section of your Bot settings in the Discord Developer Portal.
-
-### 2. API Key Setup
+### 1. API Key Setup
 
 Stocki uses external APIs for financial data. You'll need API keys from:
 
@@ -72,7 +72,7 @@ Stocki uses external APIs for financial data. You'll need API keys from:
     1.  Register at [Finnhub](https://finnhub.io/).
     2.  Obtain your API key from your dashboard.
 
-### 3. Configuration
+### 2. Configuration
 
 Create an `appsettings.json` file in the root of the `src/Stocki.Bot` project (next to `Program.cs`) and populate it with your credentials:
 
