@@ -73,7 +73,7 @@ public class FinnhubClient : IFinnhubClient
                 _logger.LogWarning("Serialized object was null");
                 return ApiResponse<StockQuote>.Failure(
                     $"Failed to serialize Stock Quote DTO object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.InternalServerError
+                    HttpStatusCode.OK
                 );
             }
 
@@ -87,7 +87,7 @@ public class FinnhubClient : IFinnhubClient
                 _logger.LogError("Problem mapping object");
                 return ApiResponse<StockQuote>.Failure(
                     $"Failed to parse Stock Quote object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.InternalServerError
+                    HttpStatusCode.OK
                 );
             }
             _logger.LogInformation("Object mapped successfully");
