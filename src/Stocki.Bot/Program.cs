@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,13 +10,20 @@ using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Overview;
 using Stocki.Bot.Chat;
 using Stocki.Bot.Setup;
+using Stocki.Domain.Interfaces;
 using Stocki.Infrastructure.Clients;
+using Stocki.Infrastructure.Persistance;
+using Stocki.Infrastructure.Persistance.Repositories;
 using Stocki.Shared.Config;
 
 var builder = Host.CreateDefaultBuilder(args);
 builder.ConfigureAppConfiguration(cfg =>
 {
-    cfg.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+    cfg.AddJsonFile(
+        Path.Combine(Directory.GetCurrentDirectory(), "src", "Stocki.Bot", "appsettings.json"),
+        optional: false,
+        reloadOnChange: true
+    );
     cfg.AddEnvironmentVariables();
 });
 builder.ConfigureServices(
@@ -25,6 +33,17 @@ builder.ConfigureServices(
         services.Configure<AlphaVantageSettings>(context.Configuration.GetSection("AlphaVantage"));
         services.Configure<FinnhubClientSettings>(context.Configuration.GetSection("Finnhub"));
         services.Configure<DiscordSettings>(context.Configuration.GetSection("Discord"));
+        //
+        // --- Postgres initialization
+        //
+        var connectionString = context
+            .Configuration.GetSection("Postgres")
+            .GetSection("ConnectionString")
+            .Value;
+        services.AddDbContext<StockiDbContext>(opt =>
+        {
+            opt.UseNpgsql(connectionString);
+        });
         //
         // --- MediatR
         //
@@ -85,6 +104,7 @@ builder.ConfigureServices(
         // Hosted service for bot startup
         services.AddHostedService<BotStartupService>();
         services.AddSingleton<InputHandlerService>();
+        services.AddScoped<IStockPriceSubscriptionRepository, StockPriceSubscriptionRepository>();
     }
 );
 builder.ConfigureLogging(logging =>
