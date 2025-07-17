@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
-using Stocki.Application.Queries.Price;
+using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Interfaces;
 using Stocki.Domain.Models;
 

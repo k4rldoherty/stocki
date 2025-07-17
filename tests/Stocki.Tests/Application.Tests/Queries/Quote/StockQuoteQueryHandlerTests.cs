@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Stocki.Application.Exceptions;
 using Stocki.Application.Interfaces;
-using Stocki.Application.Queries.Price;
+using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;
 using Stocki.Shared.Models;
