@@ -27,8 +27,8 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
     {
         try
         {
-            await _stockiDbContext.StockPriceSubscriptions.AddAsync(sps);
-            var success = await _stockiDbContext.SaveChangesAsync();
+            await _stockiDbContext.StockPriceSubscriptions.AddAsync(sps, token);
+            var success = await _stockiDbContext.SaveChangesAsync(token);
             return success > 0;
         }
         catch (Exception ex)
@@ -56,7 +56,7 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
     {
         var res = await _stockiDbContext
             .StockPriceSubscriptions.Where(x => x.DiscordId == discordId)
-            .ToListAsync();
+            .ToListAsync(token);
 
         return res;
     }
