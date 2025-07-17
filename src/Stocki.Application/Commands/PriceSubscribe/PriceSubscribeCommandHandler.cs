@@ -1,5 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Stocki.Application.Interfaces;
+using Stocki.Application.Queries.Price;
 using Stocki.Domain.Interfaces;
 using Stocki.Domain.Models;
 
@@ -9,14 +11,17 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
 {
     private readonly ILogger<PriceSubscribeCommandHandler> _logger;
     private readonly IStockPriceSubscriptionRepository _stockPriceSubscriptionRepository;
+    private readonly IFinnhubClient _client;
 
     public PriceSubscribeCommandHandler(
         ILogger<PriceSubscribeCommandHandler> l,
-        IStockPriceSubscriptionRepository sps
+        IStockPriceSubscriptionRepository sps,
+        IFinnhubClient client
     )
     {
         _logger = l;
         _stockPriceSubscriptionRepository = sps;
+        _client = client;
     }
 
     public async Task<bool> Handle(
@@ -24,6 +29,17 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
         CancellationToken cancellationToken
     )
     {
+        var validTickerCheck = await _client.GetStockQuoteAsync(
+            new StockQuoteQuery(request.Symbol),
+            cancellationToken
+        );
+
+        if (validTickerCheck.Data == null)
+        {
+            _logger.LogInformation("The passed in ticker did not return a valid quote.");
+            return false;
+        }
+
         _logger.LogDebug("Handling /subscribe command for symbol: {Symbol}", request.Symbol.Value);
         if (
             _stockPriceSubscriptionRepository.IsUserSubscribedToStockPriceNotifications(
