@@ -6,7 +6,7 @@ using Stocki.Application.Utilities;
 using Stocki.Domain.Models;
 using Stocki.Shared.Models;
 
-namespace Stocki.Application.Queries.Price;
+namespace Stocki.Application.Queries.Quote;
 
 public class StockQuoteQueryHandler : IRequestHandler<StockQuoteQuery, StockQuote?>
 {

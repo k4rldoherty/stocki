@@ -1,5 +1,5 @@
 using Stocki.Application.Queries.News;
-using Stocki.Application.Queries.Price;
+using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Models;
 using Stocki.Shared.Models;
 

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Stocki.Application.Commands.PriceSubscribe;
 using Stocki.Application.Interfaces;
-using Stocki.Application.Queries.Price;
+using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Interfaces;
 using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;

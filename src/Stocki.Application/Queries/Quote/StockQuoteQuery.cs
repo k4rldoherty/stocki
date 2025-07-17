@@ -2,7 +2,7 @@ using MediatR;
 using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;
 
-namespace Stocki.Application.Queries.Price;
+namespace Stocki.Application.Queries.Quote;
 
 public record StockQuoteQuery : IRequest<StockQuote?>
 {

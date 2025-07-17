@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.News;
-using Stocki.Application.Queries.Price;
+using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Models;
 using Stocki.Infrastructure.Clients.Finnhub;
 using Stocki.Infrastructure.Clients.Finnhub.DTOs;
