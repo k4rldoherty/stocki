@@ -4,8 +4,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Exceptions;
 using Stocki.Application.Queries.Overview;
-using Stocki.Application.Queries.Price;
-using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;
 
 namespace Stocki.Bot.Commands;
