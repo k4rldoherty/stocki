@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Stocki.Domain.Interfaces;
 using Stocki.Domain.Models;
+using Stocki.Domain.ValueObjects;
 
 namespace Stocki.Infrastructure.Persistance.Repositories;
 
@@ -34,5 +36,28 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
             _logger.LogWarning("Error: {error}", ex.Message);
             return false;
         }
+    }
+
+    public bool IsUserSubscribedToStockPriceNotifications(
+        ulong discordId,
+        TickerSymbol symbol,
+        CancellationToken token
+    )
+    {
+        return _stockiDbContext.StockPriceSubscriptions.FirstOrDefault(x =>
+                x.DiscordId == discordId && x.Ticker == symbol.Value
+            ) != null;
+    }
+
+    public async Task<List<StockPriceSubscription>> GetAllSubscriptionsForUserAsync(
+        ulong discordId,
+        CancellationToken token
+    )
+    {
+        var res = await _stockiDbContext
+            .StockPriceSubscriptions.Where(x => x.DiscordId == discordId)
+            .ToListAsync();
+
+        return res;
     }
 }

@@ -24,7 +24,18 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
         CancellationToken cancellationToken
     )
     {
-        _logger.LogDebug("Handling StockOverviewQuery for symbol: {Symbol}", request.Symbol.Value);
+        _logger.LogDebug("Handling /subscribe command for symbol: {Symbol}", request.Symbol.Value);
+        if (
+            _stockPriceSubscriptionRepository.IsUserSubscribedToStockPriceNotifications(
+                request.DiscordId,
+                request.Symbol,
+                cancellationToken
+            )
+        )
+        {
+            _logger.LogInformation("User already subscribed to {ticker}", request.Symbol.Value);
+            return false;
+        }
         StockPriceSubscription sps = new(request.DiscordId, request.Symbol.Value);
         var subscribed = await _stockPriceSubscriptionRepository.AddSubscriptionAsync(
             sps,
