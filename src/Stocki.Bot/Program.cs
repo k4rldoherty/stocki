@@ -14,6 +14,7 @@ using Stocki.Domain.Interfaces;
 using Stocki.Infrastructure.Clients;
 using Stocki.Infrastructure.Persistance;
 using Stocki.Infrastructure.Persistance.Repositories;
+using Stocki.PriceMonitor.Services;
 using Stocki.Shared.Config;
 
 var builder = Host.CreateDefaultBuilder(args);
@@ -33,6 +34,9 @@ builder.ConfigureServices(
         services.Configure<AlphaVantageSettings>(context.Configuration.GetSection("AlphaVantage"));
         services.Configure<FinnhubClientSettings>(context.Configuration.GetSection("Finnhub"));
         services.Configure<DiscordSettings>(context.Configuration.GetSection("Discord"));
+        services.Configure<FinnhubWebsocketsSettings>(
+            context.Configuration.GetSection("FinnhubWebsockets")
+        );
         //
         // --- Postgres initialization
         //
@@ -103,10 +107,13 @@ builder.ConfigureServices(
         ));
         // Hosted service for bot startup
         services.AddHostedService<BotStartupService>();
+        services.AddHostedService<PriceMonitoringService>();
         services.AddSingleton<InputHandlerService>();
+        services.AddTransient<FinnhubWSManager>();
         services.AddScoped<IStockPriceSubscriptionRepository, StockPriceSubscriptionRepository>();
     }
 );
+
 builder.ConfigureLogging(logging =>
 {
     logging.ClearProviders();

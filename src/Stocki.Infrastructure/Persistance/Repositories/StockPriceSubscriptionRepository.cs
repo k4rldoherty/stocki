@@ -60,4 +60,12 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
 
         return res;
     }
+
+    public async Task<List<StockPriceSubscription>> GetAllSubscriptionsAsync(
+        CancellationToken token
+    )
+    {
+        var res = await _stockiDbContext.StockPriceSubscriptions.ToListAsync(token);
+        return res;
+    }
 }

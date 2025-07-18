@@ -15,4 +15,5 @@ public interface IStockPriceSubscriptionRepository
         ulong discordId,
         CancellationToken token
     );
+    public Task<List<StockPriceSubscription>> GetAllSubscriptionsAsync(CancellationToken token);
 }
