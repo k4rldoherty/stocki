@@ -1,9 +1,9 @@
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Stocki.Domain.Interfaces;
 using Stocki.PriceMonitor.Models;
 using Stocki.Shared.Config;
@@ -40,7 +40,6 @@ public sealed class FinnhubWSManager
             await _webSocketClient.ConnectAsync(_uri, token);
             _recieveCts = CancellationTokenSource.CreateLinkedTokenSource(token);
             _sendCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-            await SendMessageAsync(_sendCts.Token, "AAPL");
             using (var scopeFactory = _scopeFactory.CreateScope())
             {
                 var repo =
@@ -66,7 +65,7 @@ public sealed class FinnhubWSManager
         {
             _recieveCts?.Cancel();
             _sendCts?.Cancel();
-            await _webSocketClient.CloseAsync(WebSocketCloseStatus.Empty, "Closed", token);
+            await _webSocketClient.CloseAsync(WebSocketCloseStatus.Empty, "", token);
             _webSocketClient.Dispose();
         }
     }
@@ -113,7 +112,22 @@ public sealed class FinnhubWSManager
                 {
                     string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     _logger.LogInformation($"[WS] Received: '{receivedMessage}'");
-                    // TODO: parse message here
+                    try
+                    {
+                        FinnhubStockPriceRecievedMessage ParsedWebsocketMessage =
+                            JsonConvert.DeserializeObject<FinnhubStockPriceRecievedMessage>(
+                                receivedMessage
+                            );
+                        _logger.LogInformation("Object parsed successfully");
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(
+                            "[WS] Recieved message but did not parse successfully",
+                            ex.Message
+                        );
+                        continue;
+                    }
                 }
                 else if (result.MessageType == WebSocketMessageType.Close)
                 {
@@ -144,8 +158,12 @@ public sealed class FinnhubWSManager
     {
         try
         {
-            var message = new FinnhubSubscriptionMessage { Type = "subscribe", Symbol = symbol };
-            byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            var message = new FinnhubWebsocketSubscriptionMessage
+            {
+                Type = "subscribe",
+                Symbol = symbol,
+            };
+            byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message));
             await _webSocketClient.SendAsync(
                 new ArraySegment<byte>(bytesToSend),
                 WebSocketMessageType.Text,
