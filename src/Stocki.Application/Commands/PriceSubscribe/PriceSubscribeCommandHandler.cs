@@ -7,7 +7,7 @@ using Stocki.Domain.Models;
 
 namespace Stocki.Application.Commands.PriceSubscribe;
 
-public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeCommand, bool>
+public class PriceSubscribeCommandHandler : INotificationHandler<PriceSubscribeCommand>
 {
     private readonly ILogger<PriceSubscribeCommandHandler> _logger;
     private readonly IStockPriceSubscriptionRepository _stockPriceSubscriptionRepository;
@@ -24,10 +24,7 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
         _client = client;
     }
 
-    public async Task<bool> Handle(
-        PriceSubscribeCommand request,
-        CancellationToken cancellationToken
-    )
+    public async Task Handle(PriceSubscribeCommand request, CancellationToken cancellationToken)
     {
         var validTickerCheck = await _client.GetStockQuoteAsync(
             new StockQuoteQuery(request.Symbol),
@@ -37,10 +34,13 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
         if (validTickerCheck.Data == null)
         {
             _logger.LogInformation("The passed in ticker did not return a valid quote.");
-            return false;
+            return;
         }
 
-        _logger.LogDebug("Handling /subscribe command for symbol: {Symbol}", request.Symbol.Value);
+        _logger.LogInformation(
+            "Handling /subscribe command for symbol: {Symbol}",
+            request.Symbol.Value
+        );
         if (
             _stockPriceSubscriptionRepository.IsUserSubscribedToStockPriceNotifications(
                 request.DiscordId,
@@ -50,13 +50,12 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
         )
         {
             _logger.LogInformation("User already subscribed to {ticker}", request.Symbol.Value);
-            return false;
+            return;
         }
         StockPriceSubscription sps = new(request.DiscordId, request.Symbol.Value);
         var subscribed = await _stockPriceSubscriptionRepository.AddSubscriptionAsync(
             sps,
             cancellationToken
         );
-        return subscribed;
     }
 }

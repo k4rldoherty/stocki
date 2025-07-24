@@ -3,7 +3,7 @@ using Stocki.Domain.ValueObjects;
 
 namespace Stocki.Application.Commands.PriceSubscribe;
 
-public record PriceSubscribeCommand : IRequest<bool>
+public record PriceSubscribeCommand : INotification
 {
     public TickerSymbol Symbol { get; set; }
     public ulong DiscordId { get; set; }

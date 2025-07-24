@@ -11,10 +11,12 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
     <PackageReference Include="System.Threading.Timer" Version="4.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Stocki.Domain\Stocki.Domain.csproj" />
+    <ProjectReference Include="..\Stocki.Application\Stocki.Application.csproj" />
     <ProjectReference Include="..\Stocki.Shared\Stocki.Shared.csproj" />
   </ItemGroup>
 

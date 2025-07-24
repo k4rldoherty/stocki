@@ -33,8 +33,8 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             TickerSymbol symbol = new TickerSymbol(ticker);
             PriceSubscribeCommand command = new(symbol, Context.User.Id);
             _logger.LogInformation("Received /price-subscribe command for ticker {Ticker}", ticker);
-            bool subscribed = await _mediator.Send(command, CancellationToken.None);
-
+            await _mediator.Publish(command, CancellationToken.None);
+            var subscribed = true;
             if (subscribed)
             {
                 _logger.LogInformation(

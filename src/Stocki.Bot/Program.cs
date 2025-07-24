@@ -1,4 +1,5 @@
-﻿using Discord.Interactions;
+﻿using System.Reflection;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -54,6 +55,7 @@ builder.ConfigureServices(
         services.AddMediatR(configuration =>
         {
             configuration.RegisterServicesFromAssembly(typeof(StockOverviewQuery).Assembly);
+            configuration.RegisterServicesFromAssembly(typeof(FinnhubWSManager).Assembly);
         });
         //
         // --- Alpha Client
@@ -108,8 +110,10 @@ builder.ConfigureServices(
         // Hosted service for bot startup
         services.AddHostedService<BotStartupService>();
         services.AddHostedService<PriceMonitoringService>();
+        // Other services that need less config
         services.AddSingleton<InputHandlerService>();
-        services.AddTransient<FinnhubWSManager>();
+        services.AddSingleton<FinnhubWSManager>();
+        services.AddSingleton<PriceChecker>();
         services.AddScoped<IStockPriceSubscriptionRepository, StockPriceSubscriptionRepository>();
     }
 );

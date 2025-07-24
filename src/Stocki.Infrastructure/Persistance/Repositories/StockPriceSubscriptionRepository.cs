@@ -34,7 +34,7 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
         catch (Exception ex)
         {
             _logger.LogWarning("Error: {error}", ex.Message);
-            return false;
+            throw ex;
         }
     }
 

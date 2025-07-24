@@ -17,14 +17,14 @@ public struct WSDataObj
     public string[] Category { get; set; }
 
     [JsonProperty("p")]
-    public string Price { get; set; }
+    public double Price { get; set; }
 
     [JsonProperty("s")]
     public string Symbol { get; set; }
 
     [JsonProperty("t")]
-    public string Timestamp { get; set; }
+    public ulong Timestamp { get; set; }
 
     [JsonProperty("v")]
-    public string Volume { get; set; }
+    public long Volume { get; set; }
 }

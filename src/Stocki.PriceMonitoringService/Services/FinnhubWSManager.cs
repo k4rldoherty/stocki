@@ -4,13 +4,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Stocki.Application.Interfaces;
+using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Interfaces;
+using Stocki.Domain.ValueObjects;
 using Stocki.PriceMonitor.Models;
 using Stocki.Shared.Config;
 
 namespace Stocki.PriceMonitor.Services;
 
-public sealed class FinnhubWSManager
+public class FinnhubWSManager
 {
     private readonly Uri _uri;
     private readonly ClientWebSocket _webSocketClient;
@@ -19,11 +22,13 @@ public sealed class FinnhubWSManager
     private ILogger<FinnhubWSManager> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private IOptions<FinnhubWebsocketsSettings> _options;
+    private PriceChecker _priceChecker;
 
     public FinnhubWSManager(
         ILogger<FinnhubWSManager> logger,
         IServiceScopeFactory scopeFactory,
-        IOptions<FinnhubWebsocketsSettings> options
+        IOptions<FinnhubWebsocketsSettings> options,
+        PriceChecker priceChecker
     )
     {
         _options = options;
@@ -31,6 +36,7 @@ public sealed class FinnhubWSManager
         _webSocketClient = new ClientWebSocket();
         _logger = logger;
         _scopeFactory = scopeFactory;
+        _priceChecker = priceChecker;
     }
 
     public async Task ConnectAndListenAsync(CancellationToken token)
@@ -44,13 +50,26 @@ public sealed class FinnhubWSManager
             {
                 var repo =
                     scopeFactory.ServiceProvider.GetRequiredService<IStockPriceSubscriptionRepository>();
+                var fhClient = scopeFactory.ServiceProvider.GetRequiredService<IFinnhubClient>();
                 var subs = await repo.GetAllSubscriptionsAsync(token);
                 foreach (var s in subs)
                 {
-                    _logger.LogInformation("Subscribing to {}", s.Ticker);
                     await SendMessageAsync(_sendCts.Token, s.Ticker);
+                    // Get the intial price of all subscribed stocks
+                    var initialQuote = await fhClient.GetStockQuoteAsync(
+                        new StockQuoteQuery(new TickerSymbol(s.Ticker)),
+                        token
+                    );
+                    if (initialQuote.Data != null)
+                    {
+                        _priceChecker._stockPrices.TryAdd(
+                            initialQuote.Data.Ticker,
+                            initialQuote.Data.CurrentPrice
+                        );
+                    }
                 }
             }
+
             await RecieveMessagesAsync(_recieveCts.Token);
         }
         catch (OperationCanceledException ex)
@@ -111,23 +130,34 @@ public sealed class FinnhubWSManager
                 if (result.MessageType == WebSocketMessageType.Text)
                 {
                     string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    _logger.LogInformation($"[WS] Received: '{receivedMessage}'");
+                    // skip all non trade message types
+                    // bit rough but will do for now
+                    if (receivedMessage.Count() < 25)
+                    {
+                        continue;
+                    }
+                    FinnhubStockPriceRecievedMessage ParsedWebsocketMessage;
                     try
                     {
-                        FinnhubStockPriceRecievedMessage ParsedWebsocketMessage =
+                        ParsedWebsocketMessage =
                             JsonConvert.DeserializeObject<FinnhubStockPriceRecievedMessage>(
                                 receivedMessage
                             );
-                        _logger.LogInformation("Object parsed successfully");
                     }
                     catch (JsonException ex)
                     {
                         _logger.LogWarning(
-                            "[WS] Recieved message but did not parse successfully",
+                            "[WS] Recieved message but did not parse successfully: {}",
                             ex.Message
                         );
                         continue;
                     }
+                    if (ParsedWebsocketMessage.Data.Count() == 0)
+                    {
+                        _logger.LogWarning("Invalid message recieved");
+                        continue;
+                    }
+                    _priceChecker.CheckPrice(ParsedWebsocketMessage);
                 }
                 else if (result.MessageType == WebSocketMessageType.Close)
                 {
@@ -154,10 +184,11 @@ public sealed class FinnhubWSManager
         }
     }
 
-    private async Task SendMessageAsync(CancellationToken token, string symbol)
+    public async Task SendMessageAsync(CancellationToken token, string symbol)
     {
         try
         {
+            _logger.LogInformation("Subscribing to {}", symbol);
             var message = new FinnhubWebsocketSubscriptionMessage
             {
                 Type = "subscribe",
