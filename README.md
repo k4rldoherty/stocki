@@ -1,4 +1,7 @@
 # Stocki - Your Discord Stock Companion
+<img width="1240" height="1072" alt="Stocki-News" src="https://github.com/user-attachments/assets/8c345454-fb25-43c3-92bd-7b6c15529a6c" />
+<img width="1240 height="1072" alt="Stocki Quote" src="https://github.com/user-attachments/assets/2a6e11b1-2b07-4aab-9038-f511281b98ce" />
+
 
 Stocki is a Discord bot designed to provide quick and comprehensive financial information right within your Discord server. Leveraging modern .NET technologies and a clean architectural approach, Stocki aims to deliver reliable stock data and a smooth user experience.
 
