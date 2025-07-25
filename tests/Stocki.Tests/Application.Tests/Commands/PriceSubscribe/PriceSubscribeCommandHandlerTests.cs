@@ -1,5 +1,6 @@
 using System.Net;
 using Bogus;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Stocki.Application.Commands.PriceSubscribe;
@@ -18,10 +19,12 @@ public class PriceSubscribeCommandHandlerTests
         var mockRepo = new Mock<IStockPriceSubscriptionRepository>();
         var mockLogger = new Mock<ILogger<PriceSubscribeCommandHandler>>();
         var mockClient = new Mock<IFinnhubClient>();
+        var mockMediatR = new Mock<IMediator>();
         var handler = new PriceSubscribeCommandHandler(
             mockLogger.Object,
             mockRepo.Object,
-            mockClient.Object
+            mockClient.Object,
+            mockMediatR.Object
         );
         var fakeQuote = new Faker<StockQuote>();
         StockQuote quote = fakeQuote.Generate();
@@ -51,10 +54,12 @@ public class PriceSubscribeCommandHandlerTests
         var mockRepo = new Mock<IStockPriceSubscriptionRepository>();
         var mockLogger = new Mock<ILogger<PriceSubscribeCommandHandler>>();
         var mockClient = new Mock<IFinnhubClient>();
+        var mockMediatR = new Mock<IMediator>();
         var handler = new PriceSubscribeCommandHandler(
             mockLogger.Object,
             mockRepo.Object,
-            mockClient.Object
+            mockClient.Object,
+            mockMediatR.Object
         );
         TickerSymbol Symbol = new("test");
         ulong DiscordId = 1019292920202929;
