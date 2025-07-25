@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.PriceMonitor.Models;
+using Stocki.Shared.Notifications;
 
 namespace Stocki.PriceMonitor.Services;
 
@@ -25,41 +26,42 @@ public class PriceChecker
         {
             if (!_stockPrices.TryGetValue(t.Symbol, out var currPrice))
             {
-                // TODO: Add graceful error handling for situation where stock is not found in dictionary
+                _stockPrices.TryAdd(t.Symbol, 0.0);
             }
             else
             {
-                // TODO: This is only for newly subscribed stocks, will make better later
+                // FIX: This is only for newly subscribed stocks, will make better later
                 if (currPrice == 0.00)
                     currPrice = t.Price;
-                if (HasStockMovedXPercent(t.Price, currPrice))
+                var priceChange = GetPercentageDifference(t.Price, currPrice);
+                if (priceChange >= PRICECHANGE)
                 {
                     _logger.LogInformation("Price for {} has changed {}%", t.Symbol, PRICECHANGE);
                     _stockPrices.TryUpdate(t.Symbol, t.Price, currPrice);
-                    // TODO: Send out a notification through mediatR
-                }
-                else
-                {
-                    _logger.LogInformation(
-                        "{} - Current Price: {}. Recieved Price: {}",
-                        t.Symbol,
-                        currPrice,
-                        t.Price
+                    _mediator.Publish(
+                        new PriceMovedBeyondThresholdNotification(t.Symbol, t.Price, priceChange)
                     );
+                    // FIX: To prevent multiple messages when there are lots of trades in a message, fix in future
+                    break;
                 }
+                // else
+                // {
+                //      _logger.LogInformation(
+                //          "{} - Current Price: {}. Recieved Price: {}",
+                //          t.Symbol,
+                //          currPrice,
+                //          t.Price
+                //      );
+                // }
             }
         }
     }
 
-    private bool HasStockMovedXPercent(double newPrice, double oldPrice)
+    private double GetPercentageDifference(double newPrice, double oldPrice)
     {
         if (oldPrice == 0)
-            return newPrice != 0;
+            return 0;
         var priceChange = ((newPrice - oldPrice) / oldPrice) * 100;
-        if (Math.Abs(priceChange) >= PRICECHANGE)
-        {
-            return true;
-        }
-        return false;
+        return priceChange;
     }
 }

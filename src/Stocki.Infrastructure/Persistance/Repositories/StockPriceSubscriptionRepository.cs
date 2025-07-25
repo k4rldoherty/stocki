@@ -107,4 +107,17 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
         }
         return false;
     }
+
+    public async Task<List<ulong>> GetAllUsersSubscribedToAStock(
+        string symbol,
+        CancellationToken token
+    )
+    {
+        var subs = await _stockiDbContext
+            .StockPriceSubscriptions.Where(x => x.Ticker == symbol && x.IsActive)
+            .Select(x => x.DiscordId)
+            .Distinct()
+            .ToListAsync(token);
+        return subs;
+    }
 }

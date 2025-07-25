@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +14,7 @@ using Stocki.Domain.Interfaces;
 using Stocki.Infrastructure.Clients;
 using Stocki.Infrastructure.Persistance;
 using Stocki.Infrastructure.Persistance.Repositories;
+using Stocki.NotificationService;
 using Stocki.PriceMonitor.Services;
 using Stocki.Shared.Config;
 
@@ -56,6 +56,9 @@ builder.ConfigureServices(
         {
             configuration.RegisterServicesFromAssembly(typeof(StockOverviewQuery).Assembly);
             configuration.RegisterServicesFromAssembly(typeof(FinnhubWSManager).Assembly);
+            configuration.RegisterServicesFromAssembly(
+                typeof(PriceMovedBeyondThresholdHandler).Assembly
+            );
         });
         //
         // --- Alpha Client
@@ -112,6 +115,7 @@ builder.ConfigureServices(
         services.AddHostedService<PriceMonitoringService>();
         // Other services that need less config
         services.AddSingleton<InputHandlerService>();
+        services.AddSingleton<PriceMovedBeyondThresholdHandler>();
         services.AddSingleton<FinnhubWSManager>();
         services.AddSingleton<PriceChecker>();
         services.AddScoped<IStockPriceSubscriptionRepository, StockPriceSubscriptionRepository>();

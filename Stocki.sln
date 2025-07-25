@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stocki.Tests", "tests\Stock
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stocki.PriceMonitoringService", "src\Stocki.PriceMonitoringService\Stocki.PriceMonitoringService.csproj", "{F7E6A700-7D17-4854-804D-D697136DA5F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stocki.NotificationService", "src\Stocki.NotificationService\Stocki.NotificationService.csproj", "{4A8980ED-10CF-4639-84D1-84DAE0060020}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +60,10 @@ Global
 		{F7E6A700-7D17-4854-804D-D697136DA5F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7E6A700-7D17-4854-804D-D697136DA5F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7E6A700-7D17-4854-804D-D697136DA5F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A8980ED-10CF-4639-84D1-84DAE0060020}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A8980ED-10CF-4639-84D1-84DAE0060020}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A8980ED-10CF-4639-84D1-84DAE0060020}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A8980ED-10CF-4639-84D1-84DAE0060020}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7CBA0349-B230-407E-A3D0-D56D5B286A43} = {531A8035-48B2-4078-911A-7A7876B9F866}
@@ -67,5 +73,6 @@ Global
 		{40111614-1C61-4BF2-B617-E8D20FE2705A} = {531A8035-48B2-4078-911A-7A7876B9F866}
 		{AD739083-8567-4854-8A1A-E6DC012111AB} = {2B870C79-FEF8-4FA3-9F02-D7021436AEB4}
 		{F7E6A700-7D17-4854-804D-D697136DA5F2} = {531A8035-48B2-4078-911A-7A7876B9F866}
+		{4A8980ED-10CF-4639-84D1-84DAE0060020} = {531A8035-48B2-4078-911A-7A7876B9F866}
 	EndGlobalSection
 EndGlobal

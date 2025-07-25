@@ -28,6 +28,7 @@
     <ProjectReference Include="..\Stocki.Shared\Stocki.Shared.csproj" />
     <ProjectReference Include="..\Stocki.Infrastructure\Stocki.Infrastructure.csproj" />
     <ProjectReference Include="..\Stocki.PriceMonitoringService\Stocki.PriceMonitoringService.csproj" />
+    <ProjectReference Include="..\Stocki.NotificationService\Stocki.NotificationService.csproj" />
   </ItemGroup>
 
 </Project>

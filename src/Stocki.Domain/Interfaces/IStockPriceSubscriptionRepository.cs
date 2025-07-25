@@ -18,4 +18,5 @@ public interface IStockPriceSubscriptionRepository
     public Task<List<StockPriceSubscription>> GetAllSubscriptionsAsync(CancellationToken token);
     public Task<bool> UnsubscribeAsync(ulong discordId, string ticker, CancellationToken token);
     public Task<bool> ReSubscribeAsync(ulong discordId, string ticker, CancellationToken token);
+    public Task<List<ulong>> GetAllUsersSubscribedToAStock(string ticker, CancellationToken token);
 }
