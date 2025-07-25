@@ -3,6 +3,7 @@ using Discord.Interactions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Commands.PriceSubscribe;
+using Stocki.Application.Commands.PriceUnsubscribe;
 using Stocki.Application.Queries.Subscription;
 using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;
@@ -33,8 +34,7 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             TickerSymbol symbol = new TickerSymbol(ticker);
             PriceSubscribeCommand command = new(symbol, Context.User.Id);
             _logger.LogInformation("Received /price-subscribe command for ticker {Ticker}", ticker);
-            bool subscribed = await _mediator.Send(command, CancellationToken.None);
-
+            var subscribed = await _mediator.Send(command, CancellationToken.None);
             if (subscribed)
             {
                 _logger.LogInformation(
@@ -153,6 +153,92 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
                         .Build()
                 );
             }
+        }
+        catch (Exception ex) // Catch any other unexpected errors
+        {
+            _logger.LogError(ex.Message);
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("System Error")
+                    .WithDescription(
+                        "An unexpected error occurred while processing your request. Please try again later."
+                    )
+                    .WithFooter("If this persists, contact support.")
+                    .WithColor(Color.Red)
+                    .Build()
+            );
+        }
+    }
+
+    [SlashCommand("price-unsubscribe", "Unsubscribes a user to price action changes in a stock")]
+    public async Task HandlePriceUnsubscribeAsync(
+        [Summary("ticker", "the ticker of the stock you want to unsubscribe to e.g. AAPL")]
+            string ticker
+    )
+    {
+        await DeferAsync();
+
+        try
+        {
+            TickerSymbol symbol = new TickerSymbol(ticker);
+            PriceUnsubscribeCommand command = new(symbol, Context.User.Id);
+            _logger.LogInformation(
+                "Received /price-unsubscribe command for ticker {Ticker}",
+                ticker
+            );
+            var unsubscribed = await _mediator.Send(command, CancellationToken.None);
+            if (unsubscribed)
+            {
+                _logger.LogInformation(
+                    "The /price-unsubscribe request succeeded for ticker {Ticker}",
+                    ticker
+                );
+                await FollowupAsync(
+                    embed: new EmbedBuilder()
+                        .WithTitle("Unsubscribed!") // Clear, user-centric title
+                        .AddField("Success!", $"You have sucessfully unsubscribed from {ticker}")
+                        .AddField(
+                            "Info",
+                            $"You will now no longer recieve real time updates when {ticker} moves up or down 5%"
+                        )
+                        .AddField(
+                            "Want to subscribe?",
+                            "To subscribe just use the subscribe command!"
+                        )
+                        .WithColor(Color.Green) // A warning/informational color
+                        .WithFooter("Stocki 2025")
+                        .Build()
+                );
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "The /price-unsubscribe request failed for ticker {Ticker}",
+                    ticker
+                );
+                await FollowupAsync(
+                    embed: new EmbedBuilder()
+                        .WithTitle("Cannot unsubscribe") // Clear, user-centric title
+                        .AddField("Message", $"You cannot sucessfully unsubscribe to {ticker}") // Directly use the user-friendly message from the exception
+                        .AddField(
+                            "Next Steps",
+                            "Use the /list-subscriptions command to ensure you are already subscribed to this command and try again"
+                        ) // Directly use the user-friendly message from the exception
+                        .WithColor(Color.Red) // A warning/informational color
+                        .WithFooter("Stocki 2025")
+                        .Build()
+                );
+            }
+        }
+        catch (ArgumentException ex) // Catch validation errors from TickerSymbol or other ArgumentExceptions
+        {
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithTitle("Input Error")
+                    .WithDescription($"The ticker '{ticker}' is invalid. Reason: {ex.Message}")
+                    .WithColor(Color.Orange) // Use a different color for input errors
+                    .Build()
+            );
         }
         catch (Exception ex) // Catch any other unexpected errors
         {

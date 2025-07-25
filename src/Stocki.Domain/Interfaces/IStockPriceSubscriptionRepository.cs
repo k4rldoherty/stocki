@@ -6,7 +6,7 @@ namespace Stocki.Domain.Interfaces;
 public interface IStockPriceSubscriptionRepository
 {
     public Task<bool> AddSubscriptionAsync(StockPriceSubscription sps, CancellationToken token);
-    public bool IsUserSubscribedToStockPriceNotifications(
+    public Task<StockPriceSubscription?> GetStockPriceSubscription(
         ulong discordId,
         TickerSymbol symbol,
         CancellationToken token
@@ -15,4 +15,8 @@ public interface IStockPriceSubscriptionRepository
         ulong discordId,
         CancellationToken token
     );
+    public Task<List<StockPriceSubscription>> GetAllSubscriptionsAsync(CancellationToken token);
+    public Task<bool> UnsubscribeAsync(ulong discordId, string ticker, CancellationToken token);
+    public Task<bool> ReSubscribeAsync(ulong discordId, string ticker, CancellationToken token);
+    public Task<List<ulong>> GetAllUsersSubscribedToAStock(string ticker, CancellationToken token);
 }

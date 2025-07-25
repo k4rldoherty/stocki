@@ -11,7 +11,7 @@ public class InputHandlerService()
             return;
         // TODO: some text functionality can be implemented here .. AI wrapper or something.
 
-        // Reply to all dm messages or any time it is mentioned.
+        // TODO: Only make the bot reply when it is mentioned not all the time
         await msg.Channel.SendMessageAsync(
             $"Hello {msg.Author.Username}!\nI am currently a work in progress and don't have the brain power to converse with you.\nCheck back soon..."
         );

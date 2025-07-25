@@ -5,9 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="MediatR" Version="13.0.0" />
+    <PackageReference Include="Discord.Net" Version="3.17.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Stocki.Shared\Stocki.Shared.csproj" />
+    <ProjectReference Include="..\Stocki.Domain\Stocki.Domain.csproj" />
   </ItemGroup>
 
 </Project>

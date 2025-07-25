@@ -14,6 +14,8 @@ using Stocki.Domain.Interfaces;
 using Stocki.Infrastructure.Clients;
 using Stocki.Infrastructure.Persistance;
 using Stocki.Infrastructure.Persistance.Repositories;
+using Stocki.NotificationService;
+using Stocki.PriceMonitor.Services;
 using Stocki.Shared.Config;
 
 var builder = Host.CreateDefaultBuilder(args);
@@ -33,6 +35,9 @@ builder.ConfigureServices(
         services.Configure<AlphaVantageSettings>(context.Configuration.GetSection("AlphaVantage"));
         services.Configure<FinnhubClientSettings>(context.Configuration.GetSection("Finnhub"));
         services.Configure<DiscordSettings>(context.Configuration.GetSection("Discord"));
+        services.Configure<FinnhubWebsocketsSettings>(
+            context.Configuration.GetSection("FinnhubWebsockets")
+        );
         //
         // --- Postgres initialization
         //
@@ -50,6 +55,10 @@ builder.ConfigureServices(
         services.AddMediatR(configuration =>
         {
             configuration.RegisterServicesFromAssembly(typeof(StockOverviewQuery).Assembly);
+            configuration.RegisterServicesFromAssembly(typeof(FinnhubWSManager).Assembly);
+            configuration.RegisterServicesFromAssembly(
+                typeof(PriceMovedBeyondThresholdHandler).Assembly
+            );
         });
         //
         // --- Alpha Client
@@ -103,10 +112,16 @@ builder.ConfigureServices(
         ));
         // Hosted service for bot startup
         services.AddHostedService<BotStartupService>();
+        services.AddHostedService<PriceMonitoringService>();
+        // Other services that need less config
         services.AddSingleton<InputHandlerService>();
+        services.AddSingleton<PriceMovedBeyondThresholdHandler>();
+        services.AddSingleton<FinnhubWSManager>();
+        services.AddSingleton<PriceChecker>();
         services.AddScoped<IStockPriceSubscriptionRepository, StockPriceSubscriptionRepository>();
     }
 );
+
 builder.ConfigureLogging(logging =>
 {
     logging.ClearProviders();
