@@ -1,14 +1,14 @@
 using MediatR;
 using Stocki.Domain.ValueObjects;
 
-namespace Stocki.Application.Commands.PriceSubscribe;
+namespace Stocki.Application.Commands.PriceUnsubscribe;
 
-public record PriceSubscribeCommand : IRequest<bool>
+public record PriceUnsubscribeCommand : IRequest<bool>
 {
     public TickerSymbol Symbol { get; set; }
     public ulong DiscordId { get; set; }
 
-    public PriceSubscribeCommand(TickerSymbol s, ulong discordId)
+    public PriceUnsubscribeCommand(TickerSymbol s, ulong discordId)
     {
         if (s == null)
         {

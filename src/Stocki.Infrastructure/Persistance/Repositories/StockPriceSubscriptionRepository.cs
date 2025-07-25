@@ -34,19 +34,38 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
         catch (Exception ex)
         {
             _logger.LogWarning("Error: {error}", ex.Message);
-            throw ex;
+            return false;
         }
     }
 
-    public bool IsUserSubscribedToStockPriceNotifications(
+    public async Task<bool> ReSubscribeAsync(
+        ulong discordId,
+        string ticker,
+        CancellationToken token
+    )
+    {
+        var existing = await _stockiDbContext.StockPriceSubscriptions.FirstOrDefaultAsync(x =>
+            x.DiscordId == discordId && x.Ticker == ticker && !x.IsActive
+        );
+        if (existing != null)
+        {
+            existing.IsActive = true;
+            await _stockiDbContext.SaveChangesAsync(token);
+            return true;
+        }
+        return false;
+    }
+
+    public async Task<StockPriceSubscription?> GetStockPriceSubscription(
         ulong discordId,
         TickerSymbol symbol,
         CancellationToken token
     )
     {
-        return _stockiDbContext.StockPriceSubscriptions.FirstOrDefault(x =>
-                x.DiscordId == discordId && x.Ticker == symbol.Value
-            ) != null;
+        var res = await _stockiDbContext.StockPriceSubscriptions.FirstOrDefaultAsync(x =>
+            x.DiscordId == discordId && x.Ticker == symbol.Value
+        );
+        return res;
     }
 
     public async Task<List<StockPriceSubscription>> GetAllSubscriptionsForUserAsync(
@@ -55,7 +74,7 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
     )
     {
         var res = await _stockiDbContext
-            .StockPriceSubscriptions.Where(x => x.DiscordId == discordId)
+            .StockPriceSubscriptions.Where(x => x.DiscordId == discordId && x.IsActive)
             .ToListAsync(token);
 
         return res;
@@ -65,7 +84,27 @@ public class StockPriceSubscriptionRepository : IStockPriceSubscriptionRepositor
         CancellationToken token
     )
     {
-        var res = await _stockiDbContext.StockPriceSubscriptions.ToListAsync(token);
+        var res = await _stockiDbContext
+            .StockPriceSubscriptions.Where(x => x.IsActive)
+            .ToListAsync(token);
         return res;
+    }
+
+    public async Task<bool> UnsubscribeAsync(
+        ulong discordId,
+        string ticker,
+        CancellationToken token
+    )
+    {
+        var toUnsubscribe = await _stockiDbContext.StockPriceSubscriptions.FirstOrDefaultAsync(x =>
+            x.DiscordId == discordId && x.Ticker == ticker
+        );
+        if (toUnsubscribe != null)
+        {
+            toUnsubscribe.IsActive = false;
+            var res = await _stockiDbContext.SaveChangesAsync(token) > 0;
+            return res;
+        }
+        return false;
     }
 }

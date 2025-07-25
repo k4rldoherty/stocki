@@ -1,6 +1,3 @@
 ﻿namespace Stocki.NotificationService;
 
-public class Class1
-{
-
-}
+public class NotificationService { }

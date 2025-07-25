@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Stocki.Application.Commands.PriceSubscribe;
 using Stocki.PriceMonitor.Models;
 
 namespace Stocki.PriceMonitor.Services;
@@ -11,6 +10,7 @@ public class PriceChecker
     public ConcurrentDictionary<string, double> _stockPrices { get; set; } = new();
     private readonly ILogger<PriceChecker> _logger;
     private IMediator _mediator;
+    const double PRICECHANGE = 5;
 
     public PriceChecker(ILogger<PriceChecker> logger, IMediator mediator)
     {
@@ -34,7 +34,7 @@ public class PriceChecker
                     currPrice = t.Price;
                 if (HasStockMovedXPercent(t.Price, currPrice))
                 {
-                    _logger.LogInformation("Price for {} has changed", t.Symbol);
+                    _logger.LogInformation("Price for {} has changed {}%", t.Symbol, PRICECHANGE);
                     _stockPrices.TryUpdate(t.Symbol, t.Price, currPrice);
                     // TODO: Send out a notification through mediatR
                 }
@@ -56,7 +56,7 @@ public class PriceChecker
         if (oldPrice == 0)
             return newPrice != 0;
         var priceChange = ((newPrice - oldPrice) / oldPrice) * 100;
-        if (Math.Abs(priceChange) >= 5)
+        if (Math.Abs(priceChange) >= PRICECHANGE)
         {
             return true;
         }

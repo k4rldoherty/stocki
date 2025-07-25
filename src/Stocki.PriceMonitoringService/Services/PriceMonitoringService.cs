@@ -2,16 +2,14 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Stocki.Application.Commands.PriceSubscribe;
-using Stocki.Application.Interfaces;
-using Stocki.Application.Queries.Quote;
-using Stocki.Domain.ValueObjects;
+using Stocki.Shared.Notifications;
 
 namespace Stocki.PriceMonitor.Services;
 
-public sealed class PriceMonitoringService
+public class PriceMonitoringService
     : BackgroundService,
-        INotificationHandler<PriceSubscribeCommand>
+        INotificationHandler<PriceSubscribedNotification>,
+        INotificationHandler<PriceUnsubscribedNotification>
 {
     private readonly ILogger<PriceMonitoringService> _logger;
     private readonly FinnhubWSManager _wsManager;
@@ -61,21 +59,20 @@ public sealed class PriceMonitoringService
     }
 
     public async Task Handle(
-        PriceSubscribeCommand notification,
+        PriceSubscribedNotification notification,
         CancellationToken cancellationToken
     )
     {
-        using (var s = _serviceScopeFactory.CreateScope())
-        {
-            var client = s.ServiceProvider.GetRequiredService<IFinnhubClient>();
-            var res = await client.GetStockQuoteAsync(
-                new StockQuoteQuery(new TickerSymbol(notification.Symbol.Value)),
-                cancellationToken
-            );
-            if (res.Data == null)
-                return;
-        }
-        await _wsManager.SendMessageAsync(cancellationToken, notification.Symbol.Value);
-        _priceChecker._stockPrices.TryAdd(notification.Symbol.Value, 0.0);
+        await _wsManager.SendMessageAsync(cancellationToken, notification.Symbol, true);
+        _priceChecker._stockPrices.TryAdd(notification.Symbol, 0.0);
+    }
+
+    public async Task Handle(
+        PriceUnsubscribedNotification notification,
+        CancellationToken cancellationToken
+    )
+    {
+        await _wsManager.SendMessageAsync(cancellationToken, notification.Symbol, false);
+        _priceChecker._stockPrices.Remove(notification.Symbol, out var _);
     }
 }

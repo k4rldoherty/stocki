@@ -6,17 +6,17 @@ using Stocki.Domain.Interfaces;
 using Stocki.Domain.Models;
 using Stocki.Shared.Notifications;
 
-namespace Stocki.Application.Commands.PriceSubscribe;
+namespace Stocki.Application.Commands.PriceUnsubscribe;
 
-public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeCommand, bool>
+public class PriceUnsubscribeCommandHandler : IRequestHandler<PriceUnsubscribeCommand, bool>
 {
-    private readonly ILogger<PriceSubscribeCommandHandler> _logger;
+    private readonly ILogger<PriceUnsubscribeCommandHandler> _logger;
     private readonly IStockPriceSubscriptionRepository _stockPriceSubscriptionRepository;
     private readonly IFinnhubClient _client;
     private readonly IMediator _mediator;
 
-    public PriceSubscribeCommandHandler(
-        ILogger<PriceSubscribeCommandHandler> l,
+    public PriceUnsubscribeCommandHandler(
+        ILogger<PriceUnsubscribeCommandHandler> l,
         IStockPriceSubscriptionRepository sps,
         IFinnhubClient client,
         IMediator mediator
@@ -29,7 +29,7 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
     }
 
     public async Task<bool> Handle(
-        PriceSubscribeCommand request,
+        PriceUnsubscribeCommand request,
         CancellationToken cancellationToken
     )
     {
@@ -45,9 +45,10 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
         }
 
         _logger.LogInformation(
-            "Handling /subscribe command for symbol: {Symbol}",
+            "Handling /unsubscribe command for symbol: {Symbol}",
             request.Symbol.Value
         );
+
         var exists = await _stockPriceSubscriptionRepository.GetStockPriceSubscription(
             request.DiscordId,
             request.Symbol,
@@ -55,35 +56,20 @@ public class PriceSubscribeCommandHandler : IRequestHandler<PriceSubscribeComman
         );
         if (exists != null && exists.IsActive)
         {
-            _logger.LogInformation("User already subscribed to {ticker}", request.Symbol.Value);
-            return false;
-        }
-        else if (exists != null && !exists.IsActive)
-        {
-            var resubscribed = await _stockPriceSubscriptionRepository.ReSubscribeAsync(
+            var unsubscribed = await _stockPriceSubscriptionRepository.UnsubscribeAsync(
                 request.DiscordId,
                 request.Symbol.Value,
                 cancellationToken
             );
-            if (resubscribed)
+            if (unsubscribed)
             {
                 await _mediator.Publish(
-                    new PriceSubscribedNotification(request.Symbol.Value, request.DiscordId)
+                    new PriceUnsubscribedNotification(request.Symbol.Value, request.DiscordId)
                 );
             }
-            return resubscribed;
+            return unsubscribed;
         }
-        StockPriceSubscription sps = new(request.DiscordId, request.Symbol.Value);
-        var subscribed = await _stockPriceSubscriptionRepository.AddSubscriptionAsync(
-            sps,
-            cancellationToken
-        );
-        if (subscribed)
-        {
-            await _mediator.Publish(
-                new PriceSubscribedNotification(request.Symbol.Value, request.DiscordId)
-            );
-        }
-        return subscribed;
+        _logger.LogInformation("User is not subscribed to {ticker}", request.Symbol.Value);
+        return false;
     }
 }
