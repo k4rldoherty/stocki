@@ -42,7 +42,7 @@ builder.ConfigureServices(
         // --- Postgres initialization
         //
         var connectionString = context
-            .Configuration.GetSection("Postgres")
+            .Configuration.GetSection("PostgresProd")
             .GetSection("ConnectionString")
             .Value;
         services.AddDbContext<StockiDbContext>(opt =>
