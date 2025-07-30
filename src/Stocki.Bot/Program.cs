@@ -1,10 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Overview;
@@ -22,12 +18,38 @@ var builder = Host.CreateDefaultBuilder(args);
 builder.ConfigureAppConfiguration(cfg =>
 {
     cfg.AddJsonFile(
-        Path.Combine(Directory.GetCurrentDirectory(), "src", "Stocki.Bot", "appsettings.json"),
+        Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"),
         optional: false,
         reloadOnChange: true
     );
     cfg.AddEnvironmentVariables();
 });
+
+builder.ConfigureWebHostDefaults(webBuilder =>
+{
+    webBuilder.ConfigureKestrel(serverOptions =>
+    {
+        serverOptions.ListenAnyIP(8080);
+    });
+
+    // It only serves a single endpoint for health checks.
+    webBuilder.Configure(app =>
+    {
+        // Add a simple health check endpoint at the root path "/"
+        app.UseRouting(); // Required for MapGet
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapGet(
+                "/",
+                async context =>
+                {
+                    await context.Response.WriteAsync("Bot is alive!"); // Respond with a simple message
+                }
+            );
+        });
+    });
+});
+
 builder.ConfigureServices(
     (context, services) =>
     {
