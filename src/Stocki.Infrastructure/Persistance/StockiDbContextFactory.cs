@@ -12,7 +12,10 @@ public class StockiDbContextFactory : IDesignTimeDbContextFactory<StockiDbContex
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")
             .Build();
-        var connectionString = config.GetSection("Postgres").GetSection("ConnectionString").Value;
+        var connectionString = config
+            .GetSection("PostgresProd")
+            .GetSection("ConnectionString")
+            .Value;
         var opt = new DbContextOptionsBuilder<StockiDbContext>();
         opt.UseNpgsql(
             connectionString,
