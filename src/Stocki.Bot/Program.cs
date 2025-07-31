@@ -39,11 +39,19 @@ builder.ConfigureWebHostDefaults(webBuilder =>
         app.UseRouting(); // Required for MapGet
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapGet(
+            endpoints.MapMethods(
                 "/",
+                new[] { "GET", "HEAD" },
                 async context =>
                 {
-                    await context.Response.WriteAsync("Bot is alive!"); // Respond with a simple message
+                    if (context.Request.Method == "HEAD")
+                    {
+                        context.Response.StatusCode = StatusCodes.Status200OK;
+                    }
+                    else
+                    {
+                        await context.Response.WriteAsync("Bot is alive!"); // Respond with a simple message
+                    }
                 }
             );
         });
