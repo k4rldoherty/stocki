@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 WORKDIR /app
 
 COPY ["src/Stocki.Bot/Stocki.Bot.csproj", "src/Stocki.Bot/"]
@@ -17,7 +17,7 @@ COPY . .
 WORKDIR /app/src/Stocki.Bot
 RUN dotnet publish "Stocki.Bot.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 COPY --from=build-env /app/publish .
