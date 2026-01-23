@@ -54,7 +54,7 @@ To run Stocki locally, you'll need to obtain API keys for the financial data pro
 
 ### Prerequisites
 
-* [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) or newer installed.
+* [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) 
 
 ### Quick Guide
 * Clone the repo
@@ -75,7 +75,7 @@ Stocki uses external APIs for financial data. You'll need API keys from:
     1.  Register at [Finnhub](https://finnhub.io/).
     2.  Obtain your API key from your dashboard.
 
-### 2. Configuration
+### 2. Configuration for testing
 
 Create an `appsettings.json` file in the root of the `src/Stocki.Bot` project (next to `Program.cs`) and populate it with your credentials:
 
