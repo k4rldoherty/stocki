@@ -1,14 +1,6 @@
-﻿using Discord.Interactions;
-using Discord.WebSocket;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Stocki.Application.Interfaces;
-using Stocki.Application.Queries.Overview;
-using Stocki.Bot.Chat;
+﻿using Stocki.Bot.Chat;
 using Stocki.Bot.Setup;
 using Stocki.Domain.Interfaces;
-using Stocki.Infrastructure.Clients;
-using Stocki.Infrastructure.Persistance;
 using Stocki.Infrastructure.Persistance.Repositories;
 using Stocki.NotificationService;
 using Stocki.PriceMonitor.Services;
@@ -19,7 +11,7 @@ builder.ConfigureAppConfiguration(cfg =>
 {
     cfg.AddJsonFile(
         Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"),
-        optional: false,
+        optional: true,
         reloadOnChange: true
     );
     cfg.AddEnvironmentVariables();
@@ -27,35 +19,7 @@ builder.ConfigureAppConfiguration(cfg =>
 
 builder.ConfigureWebHostDefaults(webBuilder =>
 {
-    webBuilder.ConfigureKestrel(serverOptions =>
-    {
-        serverOptions.ListenAnyIP(8080);
-    });
-
-    // It only serves a single endpoint for health checks.
-    webBuilder.Configure(app =>
-    {
-        // Add a simple health check endpoint at the root path "/"
-        app.UseRouting(); // Required for MapGet
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapMethods(
-                "/",
-                new[] { "GET", "HEAD" },
-                async context =>
-                {
-                    if (context.Request.Method == "HEAD")
-                    {
-                        context.Response.StatusCode = StatusCodes.Status200OK;
-                    }
-                    else
-                    {
-                        await context.Response.WriteAsync("Bot is alive!"); // Respond with a simple message
-                    }
-                }
-            );
-        });
-    });
+    HealthChecker.SetupHealthEndpoint(webBuilder);
 });
 
 builder.ConfigureServices(
@@ -68,82 +32,12 @@ builder.ConfigureServices(
         services.Configure<FinnhubWebsocketsSettings>(
             context.Configuration.GetSection("FinnhubWebsockets")
         );
-        //
-        // --- Postgres initialization
-        //
-        var connectionString = context
-            .Configuration.GetSection("PostgresProd")
-            .GetSection("ConnectionString")
-            .Value;
-        services.AddDbContext<StockiDbContext>(opt =>
-        {
-            opt.UseNpgsql(connectionString);
-        });
-        //
-        // --- MediatR
-        //
-        services.AddMediatR(configuration =>
-        {
-            configuration.RegisterServicesFromAssembly(typeof(StockOverviewQuery).Assembly);
-            configuration.RegisterServicesFromAssembly(typeof(FinnhubWSManager).Assembly);
-            configuration.RegisterServicesFromAssembly(
-                typeof(PriceMovedBeyondThresholdHandler).Assembly
-            );
-        });
-        //
-        // --- Alpha Client
-        //
-        services.AddHttpClient<IAlphaVantageClient, AlphaVantageClient>(client =>
-        {
-            var alphaVantageSettings = context
-                .Configuration.GetSection("AlphaVantage")
-                .Get<AlphaVantageSettings>();
-            if (alphaVantageSettings != null && !string.IsNullOrEmpty(alphaVantageSettings.BaseUrl))
-            {
-                client.BaseAddress = new Uri(alphaVantageSettings.BaseUrl);
-            }
-        });
-        //
-        // --- Finnhub Client
-        //
-        services.AddHttpClient<IFinnhubClient, FinnhubClient>(client =>
-        {
-            var finnhubClientSettings = context
-                .Configuration.GetSection("Finnhub")
-                .Get<FinnhubClientSettings>();
-            if (
-                finnhubClientSettings != null
-                && !string.IsNullOrEmpty(finnhubClientSettings.BaseUrl)
-            )
-            {
-                client.BaseAddress = new Uri(finnhubClientSettings.BaseUrl);
-            }
-            client.DefaultRequestHeaders.Add(
-                "X-Finnhub-Token",
-                context.Configuration.GetSection("Finnhub").GetSection("ApiKey").Value
-            );
-        });
-        //
-        // --- Discord Client Settings
-        //
-        services.AddSingleton(x =>
-        {
-            var discordSettings = x.GetRequiredService<IOptions<DiscordSettings>>().Value; // Get the settings here
-            return new DiscordSocketClient();
-        });
-        // Interaction Service that handles the execution of commands
-        services.AddSingleton(x => new InteractionService(
-            x.GetRequiredService<DiscordSocketClient>(),
-            new InteractionServiceConfig()
-            {
-                AutoServiceScopes = true,
-                LogLevel = Discord.LogSeverity.Info,
-            }
-        ));
-        // Hosted service for bot startup
+        Database.SetupDatabase(context, services);
+        MediatRSetup.SetupMediatR(context, services);
+        APIClients.SetupAPIClients(context, services);
+        DiscordClient.SetupDiscordClient(context, services);
         services.AddHostedService<BotStartupService>();
         services.AddHostedService<PriceMonitoringService>();
-        // Other services that need less config
         services.AddSingleton<InputHandlerService>();
         services.AddSingleton<PriceMovedBeyondThresholdHandler>();
         services.AddSingleton<FinnhubWSManager>();

@@ -1,7 +1,6 @@
 using Discord;
 using Discord.Interactions;
 using MediatR;
-using Microsoft.Extensions.Logging;
 using Stocki.Application.Exceptions;
 using Stocki.Application.Queries.News;
 using Stocki.Domain.ValueObjects;

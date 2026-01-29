@@ -2,8 +2,6 @@ using System.Reflection; // Needed for Assembly.GetEntryAssembly()
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stocki.Bot.Chat;
 using Stocki.Shared.Config;

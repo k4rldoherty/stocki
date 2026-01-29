@@ -1,7 +1,6 @@
 using Discord;
 using Discord.Interactions;
 using MediatR;
-using Microsoft.Extensions.Logging;
 using Stocki.Application.Commands.PriceSubscribe;
 using Stocki.Application.Commands.PriceUnsubscribe;
 using Stocki.Application.Queries.Subscription;
