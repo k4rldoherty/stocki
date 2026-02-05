@@ -5,6 +5,7 @@ using Stocki.Application.Commands.PriceSubscribe;
 using Stocki.Application.Commands.PriceUnsubscribe;
 using Stocki.Application.Queries.Subscription;
 using Stocki.Domain.Models;
+using Stocki.Shared.Config;
 using Stocki.Domain.ValueObjects;
 
 namespace Stocki.Bot.Commands;
@@ -13,11 +14,13 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
 {
     private readonly ILogger<PriceSubscribeCommand> _logger;
     private readonly IMediator _mediator;
+    private readonly FinnhubWebsocketsSettings _finnhubWebsocketsSettings;
 
-    public PriceSubscribeCommands(ILogger<PriceSubscribeCommand> logger, IMediator m)
+    public PriceSubscribeCommands(ILogger<PriceSubscribeCommand> logger, IMediator m, FinnhubWebsocketsSettings settings)
     {
         _logger = logger;
         _mediator = m;
+        _finnhubWebsocketsSettings = settings;
     }
 
     [SlashCommand("price-subscribe", "Subscribes a user to price action changes in a stock")]
@@ -46,7 +49,7 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
                         .AddField("Success!", $"You have sucessfully subscribed to {ticker}")
                         .AddField(
                             "Info",
-                            $"You will now recieve real time updates when {ticker} moves up or down 5%"
+                            $"You will now recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
                         )
                         .AddField(
                             "Want to unsubscribe?",
@@ -198,7 +201,7 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
                         .AddField("Success!", $"You have sucessfully unsubscribed from {ticker}")
                         .AddField(
                             "Info",
-                            $"You will now no longer recieve real time updates when {ticker} moves up or down 5%"
+                            $"You will now no longer recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
                         )
                         .AddField(
                             "Want to subscribe?",

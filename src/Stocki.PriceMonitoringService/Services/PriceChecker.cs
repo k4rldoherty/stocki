@@ -11,7 +11,6 @@ public class PriceChecker
     public ConcurrentDictionary<string, double> _stockPrices { get; set; } = new();
     private readonly ILogger<PriceChecker> _logger;
     private IMediator _mediator;
-    const double PRICECHANGE = 5;
 
     public PriceChecker(ILogger<PriceChecker> logger, IMediator mediator)
     {
@@ -19,7 +18,7 @@ public class PriceChecker
         _mediator = mediator;
     }
 
-    public void CheckPrice(FinnhubStockPriceRecievedMessage msg)
+    public void CheckPrice(FinnhubStockPriceRecievedMessage msg, double percentageThreshold)
     {
         // handles messages with multiple trades
         foreach (var t in msg.Data)
@@ -34,9 +33,9 @@ public class PriceChecker
                 if (currPrice == 0.00)
                     currPrice = t.Price;
                 var priceChange = GetPercentageDifference(t.Price, currPrice);
-                if (priceChange >= PRICECHANGE)
+                if (priceChange >= percentageThreshold)
                 {
-                    _logger.LogInformation("Price for {} has changed {}%", t.Symbol, PRICECHANGE);
+                    _logger.LogInformation("Price for {} has changed {}%", t.Symbol, percentageThreshold);
                     _stockPrices.TryUpdate(t.Symbol, t.Price, currPrice);
                     _mediator.Publish(
                         new PriceMovedBeyondThresholdNotification(t.Symbol, t.Price, priceChange)

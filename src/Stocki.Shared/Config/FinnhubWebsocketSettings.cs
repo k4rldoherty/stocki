@@ -5,4 +5,5 @@ public class FinnhubWebsocketsSettings
 {
     public string ApiKey { get; set; } = String.Empty;
     public string BaseUrl { get; set; } = "wss://ws.finnhub.io";
+    public double PriceChangePercentage { get; set; } = 5;
 }
