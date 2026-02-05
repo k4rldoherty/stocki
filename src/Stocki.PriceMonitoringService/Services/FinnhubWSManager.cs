@@ -158,7 +158,7 @@ public class FinnhubWSManager
                         _logger.LogWarning("Invalid message recieved");
                         continue;
                     }
-                    _priceChecker.CheckPrice(ParsedWebsocketMessage);
+                    _priceChecker.CheckPrice(ParsedWebsocketMessage, _options.Value.PriceChangePercentage);
                 }
                 else if (result.MessageType == WebSocketMessageType.Close)
                 {
