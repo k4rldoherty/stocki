@@ -22,6 +22,6 @@ WORKDIR /app
 
 COPY --from=build-env /app/publish .
 
-COPY ["src/Stocki.Bot/appsettings.json", "src/Stocki.Bot/appsettings.json"]
+# COPY ["src/Stocki.Bot/appsettings.json", "src/Stocki.Bot/appsettings.json"]
 
 ENTRYPOINT ["dotnet", "Stocki.Bot.dll"]
