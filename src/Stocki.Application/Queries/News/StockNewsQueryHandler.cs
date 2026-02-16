@@ -24,7 +24,6 @@ public class StockNewsQueryHandler : IRequestHandler<StockNewsQuery, List<StockN
         CancellationToken cancellationToken
     )
     {
-        _logger.LogDebug("Handling StockNewsQuery for symbol: {Symbol}", request.Symbol.Value);
         ApiResponse<List<StockNewsArticle>> Response = await _finnhubClient.GetCompanyNewsAsync(
             request,
             cancellationToken
@@ -42,7 +41,7 @@ public class StockNewsQueryHandler : IRequestHandler<StockNewsQuery, List<StockN
             }
             else
             {
-                _logger.LogWarning(
+                _logger.LogInformation(
                     "No stock news data returned from Finnhub for symbol: {Symbol}",
                     request.Symbol.Value
                 );
@@ -57,7 +56,7 @@ public class StockNewsQueryHandler : IRequestHandler<StockNewsQuery, List<StockN
         {
             if (Response.Data is null)
             {
-                _logger.LogWarning(
+                _logger.LogInformation(
                     "Successfully retrieved response from API, but no stock news data was found for symbol: {Symbol}",
                     request.Symbol.Value
                 );

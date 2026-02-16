@@ -20,7 +20,6 @@ public class PriceChecker
 
     public void CheckPrice(FinnhubStockPriceRecievedMessage msg, double percentageThreshold)
     {
-        // handles messages with multiple trades
         foreach (var t in msg.Data)
         {
             if (!_stockPrices.TryGetValue(t.Symbol, out var currPrice))
@@ -29,9 +28,6 @@ public class PriceChecker
             }
             else
             {
-                // FIX: This is only for newly subscribed stocks, will make better later
-                if (currPrice == 0.00)
-                    currPrice = t.Price;
                 var priceChange = GetPercentageDifference(t.Price, currPrice);
                 if (priceChange >= percentageThreshold)
                 {
@@ -43,15 +39,15 @@ public class PriceChecker
                     // FIX: To prevent multiple messages when there are lots of trades in a message, fix in future
                     break;
                 }
-                // else
-                // {
-                //      _logger.LogInformation(
-                //          "{} - Current Price: {}. Recieved Price: {}",
-                //          t.Symbol,
-                //          currPrice,
-                //          t.Price
-                //      );
-                // }
+                else
+                {
+                    _logger.LogInformation(
+                        "{} - Current Price: {}. Recieved Price: {}",
+                        t.Symbol,
+                        currPrice,
+                        t.Price
+                    );
+                }
             }
         }
     }
