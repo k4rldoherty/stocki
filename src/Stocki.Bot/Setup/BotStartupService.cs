@@ -73,11 +73,7 @@ public class BotStartupService : BackgroundService
             });
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Bot host stopped. Shutting down.");
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "An unexpected error occurred while the bot was running.");
         }

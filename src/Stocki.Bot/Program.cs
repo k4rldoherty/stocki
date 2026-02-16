@@ -7,16 +7,6 @@ using Stocki.PriceMonitor.Services;
 using Stocki.Shared.Config;
 
 var builder = Host.CreateDefaultBuilder(args);
-builder.ConfigureAppConfiguration(cfg =>
-{
-    cfg.AddJsonFile(
-        Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"),
-        optional: true,
-        reloadOnChange: true
-    );
-    cfg.AddEnvironmentVariables();
-});
-
 builder.ConfigureWebHostDefaults(webBuilder =>
 {
     HealthChecker.SetupHealthEndpoint(webBuilder);
@@ -38,6 +28,13 @@ builder.ConfigureServices(
         DiscordClient.SetupDiscordClient(context, services);
         services.AddHostedService<BotStartupService>();
         services.AddHostedService<PriceMonitoringService>();
+        services.AddSingleton(sp =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            return config.GetSection("FinnhubWebsockets")
+                         .Get<FinnhubWebsocketsSettings>()
+                ?? new FinnhubWebsocketsSettings();
+        });
         services.AddSingleton<InputHandlerService>();
         services.AddSingleton<PriceMovedBeyondThresholdHandler>();
         services.AddSingleton<FinnhubWSManager>();

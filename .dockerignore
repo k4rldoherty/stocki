@@ -1,0 +1,20 @@
+# IDE folders
+.vs/
+.vscode/
+
+# Build artifacts
+**/bin/
+**/obj/
+
+# Local publishing folders
+**/publish/
+
+# Secrets and Settings
+**/*.user
+**/appsettings.Development.json
+**/.env
+secrets.json
+
+# Git
+.git/
+.gitignore

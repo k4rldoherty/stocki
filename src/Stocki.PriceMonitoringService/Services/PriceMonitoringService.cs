@@ -2,6 +2,9 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Stocki.Application.Interfaces;
+using Stocki.Application.Queries.Quote;
+using Stocki.Domain.ValueObjects;
 using Stocki.Shared.Notifications;
 
 namespace Stocki.PriceMonitor.Services;
@@ -53,8 +56,6 @@ public class PriceMonitoringService
 
     public override async Task StopAsync(CancellationToken token)
     {
-        // Call the finnhub stop websockets connection logic here
-        await _wsManager.StopAsync(token);
         await base.StopAsync(token);
     }
 
@@ -64,7 +65,19 @@ public class PriceMonitoringService
     )
     {
         await _wsManager.SendMessageAsync(cancellationToken, notification.Symbol, true);
-        _priceChecker._stockPrices.TryAdd(notification.Symbol, 0.0);
+        using (var scope = _serviceScopeFactory.CreateScope())
+        {
+            var fhClient = scope.ServiceProvider.GetRequiredService<IFinnhubClient>();
+            var price = await fhClient.GetStockQuoteAsync(new StockQuoteQuery(new TickerSymbol(notification.Symbol)), cancellationToken);
+            if (price.Data != null)
+            {
+                _priceChecker._stockPrices.TryAdd(notification.Symbol, price.Data.CurrentPrice);
+            }
+            else
+            {
+                _priceChecker._stockPrices.TryAdd(notification.Symbol, 0.0);
+            }
+        }
     }
 
     public async Task Handle(

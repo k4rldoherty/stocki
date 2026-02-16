@@ -6,6 +6,12 @@ namespace Stocki.Infrastructure.Persistance;
 
 public class StockiDbContextFactory : IDesignTimeDbContextFactory<StockiDbContext>
 {
+    ///
+    /// <summary>
+    /// Creates a new instance of the StockiDbContext class.
+    /// Mainly used for design time db context creation, i.e when running migrations
+    /// </summary>
+    ///
     public StockiDbContext CreateDbContext(string[] args)
     {
         var config = new ConfigurationBuilder()
@@ -13,8 +19,8 @@ public class StockiDbContextFactory : IDesignTimeDbContextFactory<StockiDbContex
             .AddJsonFile("appsettings.json")
             .Build();
         var connectionString = config
-            .GetSection("PostgresProd")
-            .GetSection("ConnectionString")
+            .GetSection("ConnectionStrings")
+            .GetSection("production")
             .Value;
         var opt = new DbContextOptionsBuilder<StockiDbContext>();
         opt.UseNpgsql(

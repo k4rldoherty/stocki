@@ -16,7 +16,7 @@ namespace Stocki.PriceMonitor.Services;
 public class FinnhubWSManager
 {
     private readonly Uri _uri;
-    private readonly ClientWebSocket _webSocketClient;
+    private ClientWebSocket? _webSocketClient;
     private CancellationTokenSource? _recieveCts;
     private CancellationTokenSource? _sendCts;
     private ILogger<FinnhubWSManager> _logger;
@@ -33,7 +33,6 @@ public class FinnhubWSManager
     {
         _options = options;
         _uri = new Uri($"{_options.Value.BaseUrl}?token={_options.Value.ApiKey}");
-        _webSocketClient = new ClientWebSocket();
         _logger = logger;
         _scopeFactory = scopeFactory;
         _priceChecker = priceChecker;
@@ -41,9 +40,11 @@ public class FinnhubWSManager
 
     public async Task ConnectAndListenAsync(CancellationToken token)
     {
+        using var client = new ClientWebSocket();
+        _webSocketClient = client;
         try
         {
-            await _webSocketClient.ConnectAsync(_uri, token);
+            await client.ConnectAsync(_uri, token);
             _recieveCts = CancellationTokenSource.CreateLinkedTokenSource(token);
             _sendCts = CancellationTokenSource.CreateLinkedTokenSource(token);
             using (var scopeFactory = _scopeFactory.CreateScope())
@@ -71,7 +72,7 @@ public class FinnhubWSManager
             }
 
             _logger.LogInformation("[WS] Client Listening for messages.");
-            await RecieveMessagesAsync(_recieveCts.Token);
+            await RecieveMessagesAsync(_recieveCts.Token, client);
         }
         catch (OperationCanceledException ex)
         {
@@ -80,50 +81,54 @@ public class FinnhubWSManager
         catch (Exception ex)
         {
             _logger.LogInformation("[WS] Unhandled Exception: {ex}", ex.Message);
+            throw;
         }
         finally
         {
-            _recieveCts?.Cancel();
-            _sendCts?.Cancel();
-            await _webSocketClient.CloseAsync(WebSocketCloseStatus.Empty, "", token);
-            _webSocketClient.Dispose();
+            if (_webSocketClient == client) _webSocketClient = null;
         }
     }
 
     public async Task StopAsync(CancellationToken token)
     {
+        var client = _webSocketClient;
         _recieveCts?.Cancel();
         _sendCts?.Cancel();
 
         if (
-            _webSocketClient?.State == WebSocketState.Open
-            || _webSocketClient?.State == WebSocketState.Connecting
+            client?.State == WebSocketState.Open
+            || client?.State == WebSocketState.Connecting
         )
         {
             Console.WriteLine("[WS] Explicitly closing WebSocket on StopAsync...");
-            await _webSocketClient.CloseOutputAsync(
+            await client.CloseOutputAsync(
                 WebSocketCloseStatus.NormalClosure,
                 "StopAsync called",
                 CancellationToken.None
             );
-            await _webSocketClient.CloseAsync(
+            await client.CloseAsync(
                 WebSocketCloseStatus.NormalClosure,
                 "StopAsync called",
                 CancellationToken.None
             );
         }
-        _webSocketClient?.Dispose();
+        client?.Dispose();
         _logger.LogInformation("[WS] WebSocket client stopped and disposed.");
     }
 
-    private async Task RecieveMessagesAsync(CancellationToken token)
+    private async Task RecieveMessagesAsync(CancellationToken token, ClientWebSocket client)
     {
+        if (client == null)
+        {
+            _logger.LogWarning("[WS] Cannot revieve message: No active connection.");
+            return;
+        }
         var buffer = new byte[1024 * 4];
         try
         {
-            while (_webSocketClient.State == WebSocketState.Open && !token.IsCancellationRequested)
+            while (client.State == WebSocketState.Open && !token.IsCancellationRequested)
             {
-                var result = await _webSocketClient.ReceiveAsync(
+                var result = await client.ReceiveAsync(
                     new ArraySegment<byte>(buffer),
                     token
                 );
@@ -166,7 +171,7 @@ public class FinnhubWSManager
                         $"[WS] Server initiated close: {result.CloseStatus} - {result.CloseStatusDescription}"
                     );
                     // Attempt to close from client side if server initiates
-                    await _webSocketClient.CloseOutputAsync(
+                    await client.CloseOutputAsync(
                         WebSocketCloseStatus.NormalClosure,
                         "Client ack close",
                         CancellationToken.None
@@ -187,6 +192,13 @@ public class FinnhubWSManager
 
     public async Task SendMessageAsync(CancellationToken token, string symbol, bool isSubscribe)
     {
+        var client = _webSocketClient;
+        if (client == null)
+        {
+            _logger.LogWarning("[WS] Cannot send {Action} for {Symbol}: No active connection.",
+                        isSubscribe ? "subscription" : "unsubscription", symbol);
+            return;
+        }
         if (isSubscribe)
         {
             try
@@ -198,7 +210,7 @@ public class FinnhubWSManager
                     Symbol = symbol,
                 };
                 byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message));
-                await _webSocketClient.SendAsync(
+                await client.SendAsync(
                     new ArraySegment<byte>(bytesToSend),
                     WebSocketMessageType.Text,
                     true,
@@ -226,7 +238,7 @@ public class FinnhubWSManager
                     Symbol = symbol,
                 };
                 byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message));
-                await _webSocketClient.SendAsync(
+                await client.SendAsync(
                     new ArraySegment<byte>(bytesToSend),
                     WebSocketMessageType.Text,
                     true,

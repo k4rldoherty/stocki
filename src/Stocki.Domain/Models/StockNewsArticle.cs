@@ -1,6 +1,6 @@
 namespace Stocki.Domain.Models;
 
-public class StockNewsArticle
+public record StockNewsArticle
 {
     public DateTime DateOfArticle;
     public String Headline = string.Empty;

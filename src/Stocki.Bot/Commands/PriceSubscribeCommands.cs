@@ -26,8 +26,8 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
     [SlashCommand("price-subscribe", "Subscribes a user to price action changes in a stock")]
     public async Task HandlePriceSubscribeAsync(
         [Summary("ticker", "the ticker of the stock you want to subscribe to e.g. AAPL")]
-            string ticker
-    )
+      string ticker
+        )
     {
         await DeferAsync();
 
@@ -42,74 +42,74 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
                 _logger.LogInformation(
                     "The /price-subscribe request succeeded for ticker {Ticker}",
                     ticker
-                );
+                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                        .WithTitle("Subscribed!") // Clear, user-centric title
-                        .AddField("Success!", $"You have sucessfully subscribed to {ticker}")
-                        .AddField(
-                            "Info",
-                            $"You will now recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
-                        )
-                        .AddField(
-                            "Want to unsubscribe?",
-                            "To unsubscribe just use the unsubscribe command!"
-                        )
-                        .WithColor(Color.Green) // A warning/informational color
-                        .WithFooter("Stocki 2025")
-                        .Build()
-                );
+                    .WithTitle("Subscribed!") // Clear, user-centric title
+                    .AddField("Success!", $"You have sucessfully subscribed to {ticker}")
+                    .AddField(
+                      "Info",
+                      $"You will now recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
+                      )
+                    .AddField(
+                      "Want to unsubscribe?",
+                      "To unsubscribe just use the unsubscribe command!"
+                      )
+                    .WithColor(Color.Green) // A warning/informational color
+                    .WithFooter("Stocki 2025")
+                    .Build()
+                    );
             }
             else
             {
-                _logger.LogWarning(
+                _logger.LogInformation(
                     "The /price-subscribe request failed for ticker {Ticker}",
                     ticker
-                );
+                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                        .WithTitle("Cannot Subscribe") // Clear, user-centric title
-                        .AddField("Message", $"You cannot sucessfully subscribe to {ticker}") // Directly use the user-friendly message from the exception
-                        .AddField(
-                            "Next Steps",
-                            "Use the /list-subscriptions command to ensure you arent already subscribed to this command and try again"
-                        ) // Directly use the user-friendly message from the exception
-                        .WithColor(Color.Red) // A warning/informational color
-                        .WithFooter("Stocki 2025")
-                        .Build()
-                );
+                    .WithTitle("Cannot Subscribe") // Clear, user-centric title
+                    .AddField("Message", $"You cannot sucessfully subscribe to {ticker}") // Directly use the user-friendly message from the exception
+                    .AddField(
+                      "Next Steps",
+                      "Use the /list-subscriptions command to ensure you arent already subscribed to this command and try again"
+                      ) // Directly use the user-friendly message from the exception
+                    .WithColor(Color.Red) // A warning/informational color
+                    .WithFooter("Stocki 2025")
+                    .Build()
+                    );
             }
         }
         catch (ArgumentException ex) // Catch validation errors from TickerSymbol or other ArgumentExceptions
         {
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("Input Error")
-                    .WithDescription($"The ticker '{ticker}' is invalid. Reason: {ex.Message}")
-                    .WithColor(Color.Orange) // Use a different color for input errors
-                    .Build()
-            );
+                .WithTitle("Input Error")
+                .WithDescription($"The ticker '{ticker}' is invalid. Reason: {ex.Message}")
+                .WithColor(Color.Orange) // Use a different color for input errors
+                .Build()
+                );
         }
         catch (Exception ex) // Catch any other unexpected errors
         {
             _logger.LogError(ex.Message);
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("System Error")
-                    .WithDescription(
-                        "An unexpected error occurred while processing your request. Please try again later."
-                    )
-                    .WithFooter("If this persists, contact support.")
-                    .WithColor(Color.Red)
-                    .Build()
-            );
+                .WithTitle("System Error")
+                .WithDescription(
+                  "An unexpected error occurred while processing your request. Please try again later."
+                  )
+                .WithFooter("If this persists, contact support.")
+                .WithColor(Color.Red)
+                .Build()
+                );
         }
     }
 
     [SlashCommand(
         "list-price-subscriptions",
         "Lists all the stocks you are currently subscribed to"
-    )]
+        )]
     public async Task HandleListPriceSubscriptionsAsync()
     {
         await DeferAsync();
@@ -121,14 +121,14 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             List<StockPriceSubscription> subscribedStocks = await _mediator.Send(
                 Query,
                 CancellationToken.None
-            );
+                );
 
             if (subscribedStocks.Count > 0)
             {
                 var e = new EmbedBuilder()
-                    .WithTitle("Subscribed Stocks") // Clear, user-centric title
-                    .WithFooter("To unsubscribe just use the unsubscribe command!")
-                    .WithColor(Color.Green);
+                  .WithTitle("Subscribed Stocks") // Clear, user-centric title
+                  .WithFooter("To unsubscribe just use the unsubscribe command!")
+                  .WithColor(Color.Green);
                 foreach (var s in subscribedStocks)
                 {
                     string fieldName = $"**{s.Ticker} - **";
@@ -142,18 +142,18 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             {
                 _logger.LogInformation(
                     "The /list-price-subscriptions request succeeded, but the user is not subscribed to any stocks"
-                );
+                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                        .WithTitle("No Subscriptions Yet") // Clear, user-centric title
-                        .AddField(
-                            "Build Your Watchlist",
-                            $"Use the /price-subscribe command to subscribe to some stocks price changes"
-                        ) // Directly use the user-friendly message from the exception
-                        .WithColor(Color.Orange) // A warning/informational color
-                        .WithFooter("Stocki 2025")
-                        .Build()
-                );
+                    .WithTitle("No Subscriptions Yet") // Clear, user-centric title
+                    .AddField(
+                      "Build Your Watchlist",
+                      $"Use the /price-subscribe command to subscribe to some stocks price changes"
+                      ) // Directly use the user-friendly message from the exception
+                    .WithColor(Color.Orange) // A warning/informational color
+                    .WithFooter("Stocki 2025")
+                    .Build()
+                    );
             }
         }
         catch (Exception ex) // Catch any other unexpected errors
@@ -161,22 +161,22 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             _logger.LogError(ex.Message);
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("System Error")
-                    .WithDescription(
-                        "An unexpected error occurred while processing your request. Please try again later."
-                    )
-                    .WithFooter("If this persists, contact support.")
-                    .WithColor(Color.Red)
-                    .Build()
-            );
+                .WithTitle("System Error")
+                .WithDescription(
+                  "An unexpected error occurred while processing your request. Please try again later."
+                  )
+                .WithFooter("If this persists, contact support.")
+                .WithColor(Color.Red)
+                .Build()
+                );
         }
     }
 
     [SlashCommand("price-unsubscribe", "Unsubscribes a user to price action changes in a stock")]
     public async Task HandlePriceUnsubscribeAsync(
         [Summary("ticker", "the ticker of the stock you want to unsubscribe to e.g. AAPL")]
-            string ticker
-    )
+      string ticker
+        )
     {
         await DeferAsync();
 
@@ -187,74 +187,74 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             _logger.LogInformation(
                 "Received /price-unsubscribe command for ticker {Ticker}",
                 ticker
-            );
+                );
             var unsubscribed = await _mediator.Send(command, CancellationToken.None);
             if (unsubscribed)
             {
                 _logger.LogInformation(
                     "The /price-unsubscribe request succeeded for ticker {Ticker}",
                     ticker
-                );
+                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                        .WithTitle("Unsubscribed!") // Clear, user-centric title
-                        .AddField("Success!", $"You have sucessfully unsubscribed from {ticker}")
-                        .AddField(
-                            "Info",
-                            $"You will now no longer recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
-                        )
-                        .AddField(
-                            "Want to subscribe?",
-                            "To subscribe just use the subscribe command!"
-                        )
-                        .WithColor(Color.Green) // A warning/informational color
-                        .WithFooter("Stocki 2025")
-                        .Build()
-                );
+                    .WithTitle("Unsubscribed!") // Clear, user-centric title
+                    .AddField("Success!", $"You have sucessfully unsubscribed from {ticker}")
+                    .AddField(
+                      "Info",
+                      $"You will now no longer recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
+                      )
+                    .AddField(
+                      "Want to subscribe?",
+                      "To subscribe just use the subscribe command!"
+                      )
+                    .WithColor(Color.Green) // A warning/informational color
+                    .WithFooter("Stocki 2025")
+                    .Build()
+                    );
             }
             else
             {
                 _logger.LogWarning(
                     "The /price-unsubscribe request failed for ticker {Ticker}",
                     ticker
-                );
+                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                        .WithTitle("Cannot unsubscribe") // Clear, user-centric title
-                        .AddField("Message", $"You cannot sucessfully unsubscribe to {ticker}") // Directly use the user-friendly message from the exception
-                        .AddField(
-                            "Next Steps",
-                            "Use the /list-subscriptions command to ensure you are already subscribed to this command and try again"
-                        ) // Directly use the user-friendly message from the exception
-                        .WithColor(Color.Red) // A warning/informational color
-                        .WithFooter("Stocki 2025")
-                        .Build()
-                );
+                    .WithTitle("Cannot unsubscribe") // Clear, user-centric title
+                    .AddField("Message", $"You cannot sucessfully unsubscribe to {ticker}") // Directly use the user-friendly message from the exception
+                    .AddField(
+                      "Next Steps",
+                      "Use the /list-subscriptions command to ensure you are already subscribed to this command and try again"
+                      ) // Directly use the user-friendly message from the exception
+                    .WithColor(Color.Red) // A warning/informational color
+                    .WithFooter("Stocki 2025")
+                    .Build()
+                    );
             }
         }
         catch (ArgumentException ex) // Catch validation errors from TickerSymbol or other ArgumentExceptions
         {
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("Input Error")
-                    .WithDescription($"The ticker '{ticker}' is invalid. Reason: {ex.Message}")
-                    .WithColor(Color.Orange) // Use a different color for input errors
-                    .Build()
-            );
+                .WithTitle("Input Error")
+                .WithDescription($"The ticker '{ticker}' is invalid. Reason: {ex.Message}")
+                .WithColor(Color.Orange) // Use a different color for input errors
+                .Build()
+                );
         }
         catch (Exception ex) // Catch any other unexpected errors
         {
             _logger.LogError(ex.Message);
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("System Error")
-                    .WithDescription(
-                        "An unexpected error occurred while processing your request. Please try again later."
-                    )
-                    .WithFooter("If this persists, contact support.")
-                    .WithColor(Color.Red)
-                    .Build()
-            );
+                .WithTitle("System Error")
+                .WithDescription(
+                  "An unexpected error occurred while processing your request. Please try again later."
+                  )
+                .WithFooter("If this persists, contact support.")
+                .WithColor(Color.Red)
+                .Build()
+                );
         }
     }
 }

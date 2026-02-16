@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Utilities;
-using Stocki.Domain.Models;
 using Stocki.Shared.Models;
 
 namespace Stocki.Application.Queries.Overview;

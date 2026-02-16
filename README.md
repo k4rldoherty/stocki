@@ -74,30 +74,10 @@ Stocki uses external APIs for financial data. You'll need API keys from:
 * **Finnhub:**
     1.  Register at [Finnhub](https://finnhub.io/).
     2.  Obtain your API key from your dashboard.
-
-### 2. Configuration for testing
-
-Create an `appsettings.json` file in the root of the `src/Stocki.Bot` project (next to `Program.cs`) and populate it with your credentials:
-
-Make sure this file is part of your .gitignore!
-
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.Hosting.Lifetime": "Information"
-    }
-  },
-  "AlphaVantage": {
-    "BaseUrl": "[https://www.alphavantage.co/](https://www.alphavantage.co/)",
-    "ApiKey": "YOUR_ALPHA_VANTAGE_API_KEY"
-  },
-  "Finnhub": {
-    "BaseUrl": "[https://finnhub.io/api/v1/](https://finnhub.io/api/v1/)",
-    "ApiKey": "YOUR_FINNHUB_API_KEY"
-  },
-  "Discord": {
-    "Token": "YOUR_DISCORD_BOT_TOKEN"
-  }
-}
+* **Finnhub Websockets:**
+    1.  The API key is the same as the one for finnhubs REST API.
+    2.  The base URL is [Here](wss://ws.finnhub.io)
+* **Database:**
+    1.  The database is a PostgreSQL database.
+    2.  You will have to create a database for local development, and run the migrations to get it up to date.
+    3.  There is a lot of information available on how to do this, better than I can describe here 
