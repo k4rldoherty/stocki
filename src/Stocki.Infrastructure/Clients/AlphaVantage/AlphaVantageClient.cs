@@ -5,7 +5,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Overview;
-using Stocki.Domain.Models;
 using Stocki.Infrastructure.Clients.AlphaVantage;
 using Stocki.Infrastructure.Clients.DTOs;
 using Stocki.Shared.Config;
