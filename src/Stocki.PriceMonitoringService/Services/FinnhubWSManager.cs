@@ -1,9 +1,9 @@
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Interfaces;
@@ -29,7 +29,7 @@ public class FinnhubWSManager
         IServiceScopeFactory scopeFactory,
         IOptions<FinnhubWebsocketsSettings> options,
         PriceChecker priceChecker
-    )
+        )
     {
         _options = options;
         _uri = new Uri($"{_options.Value.BaseUrl}?token={_options.Value.ApiKey}");
@@ -47,30 +47,7 @@ public class FinnhubWSManager
             await client.ConnectAsync(_uri, token);
             _recieveCts = CancellationTokenSource.CreateLinkedTokenSource(token);
             _sendCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-            using (var scopeFactory = _scopeFactory.CreateScope())
-            {
-                var repo =
-                    scopeFactory.ServiceProvider.GetRequiredService<IStockPriceSubscriptionRepository>();
-                var fhClient = scopeFactory.ServiceProvider.GetRequiredService<IFinnhubClient>();
-                var subs = await repo.GetAllSubscriptionsAsync(token);
-                foreach (var s in subs)
-                {
-                    await SendMessageAsync(_sendCts.Token, s.Ticker, true);
-                    // Get the intial price of all subscribed stocks
-                    var initialQuote = await fhClient.GetStockQuoteAsync(
-                        new StockQuoteQuery(new TickerSymbol(s.Ticker)),
-                        token
-                    );
-                    if (initialQuote.Data != null)
-                    {
-                        _priceChecker._stockPrices.TryAdd(
-                            initialQuote.Data.Ticker,
-                            initialQuote.Data.CurrentPrice
-                        );
-                    }
-                }
-            }
-
+            await GetSubscribedStocksAndInitialPricesAsync(token);
             _logger.LogInformation("[WS] Client Listening for messages.");
             await RecieveMessagesAsync(_recieveCts.Token, client);
         }
@@ -89,6 +66,32 @@ public class FinnhubWSManager
         }
     }
 
+    private async Task GetSubscribedStocksAndInitialPricesAsync(CancellationToken token)
+    {
+        using (var scopeFactory = _scopeFactory.CreateScope())
+        {
+            var repo =
+              scopeFactory.ServiceProvider.GetRequiredService<IStockPriceSubscriptionRepository>();
+            var fhClient = scopeFactory.ServiceProvider.GetRequiredService<IFinnhubClient>();
+            var subs = await repo.GetAllSubscriptionsAsync(token);
+            foreach (var s in subs)
+            {
+                await SendMessageAsync(_sendCts!.Token, s.Ticker, true);
+                var initialQuote = await fhClient.GetStockQuoteAsync(
+                    new StockQuoteQuery(new TickerSymbol(s.Ticker)),
+                    token
+                    );
+                if (initialQuote.Data != null)
+                {
+                    _priceChecker._stockPrices.TryAdd(
+                        initialQuote.Data.Ticker,
+                        initialQuote.Data.CurrentPrice
+                        );
+                }
+            }
+        }
+    }
+
     public async Task StopAsync(CancellationToken token)
     {
         var client = _webSocketClient;
@@ -98,19 +101,19 @@ public class FinnhubWSManager
         if (
             client?.State == WebSocketState.Open
             || client?.State == WebSocketState.Connecting
-        )
+           )
         {
             Console.WriteLine("[WS] Explicitly closing WebSocket on StopAsync...");
             await client.CloseOutputAsync(
                 WebSocketCloseStatus.NormalClosure,
                 "StopAsync called",
                 CancellationToken.None
-            );
+                );
             await client.CloseAsync(
                 WebSocketCloseStatus.NormalClosure,
                 "StopAsync called",
                 CancellationToken.None
-            );
+                );
         }
         client?.Dispose();
         _logger.LogInformation("[WS] WebSocket client stopped and disposed.");
@@ -124,136 +127,132 @@ public class FinnhubWSManager
             return;
         }
         var buffer = new byte[1024 * 4];
+        using var ms = new MemoryStream();
         try
         {
             while (client.State == WebSocketState.Open && !token.IsCancellationRequested)
             {
-                var result = await client.ReceiveAsync(
-                    new ArraySegment<byte>(buffer),
-                    token
-                );
-
-                if (result.MessageType == WebSocketMessageType.Text)
+                WebSocketReceiveResult result;
+                ms.SetLength(0);
+                do
                 {
-                    string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    // skip all non trade message types
-                    // bit rough but will do for now
-                    if (receivedMessage.Count() < 25)
-                    {
-                        continue;
-                    }
-                    FinnhubStockPriceRecievedMessage ParsedWebsocketMessage;
+                    result = await client.ReceiveAsync(
+                        new ArraySegment<byte>(buffer),
+                        token);
+
+                    if (result.MessageType == WebSocketMessageType.Close) break;
+
+                    ms.Write(buffer.AsSpan(0, result.Count));
+
+                } while (!result.EndOfMessage);
+
+                if (result.MessageType == WebSocketMessageType.Close) break;
+
+                if (ms.Length > 0)
+                {
+                    if (ms.Length < 25) continue;
                     try
                     {
-                        ParsedWebsocketMessage =
-                            JsonConvert.DeserializeObject<FinnhubStockPriceRecievedMessage>(
-                                receivedMessage
-                            );
+                        ms.Seek(0, SeekOrigin.Begin);
+                        var parsedWebsocketMessage = await JsonSerializer.DeserializeAsync<FinnhubStockPriceReceivedMessage>(ms, cancellationToken: token);
+                        if (parsedWebsocketMessage.Data == null || parsedWebsocketMessage.Data.Length == 0)
+                        {
+                            _logger.LogWarning("Invalid message recieved");
+                            continue;
+                        }
+                        _priceChecker.CheckPrice(parsedWebsocketMessage, (decimal)_options.Value.PriceChangePercentage);
                     }
-                    catch (JsonException ex)
+                    catch (Exception ex)
                     {
                         _logger.LogWarning(
                             "[WS] Recieved message but did not parse successfully: {}",
                             ex.Message
-                        );
-                        continue;
+                            );
                     }
-                    if (ParsedWebsocketMessage.Data.Count() == 0)
-                    {
-                        _logger.LogWarning("Invalid message recieved");
-                        continue;
-                    }
-                    _priceChecker.CheckPrice(ParsedWebsocketMessage, _options.Value.PriceChangePercentage);
                 }
-                else if (result.MessageType == WebSocketMessageType.Close)
+                else
                 {
-                    _logger.LogInformation(
-                        $"[WS] Server initiated close: {result.CloseStatus} - {result.CloseStatusDescription}"
-                    );
-                    // Attempt to close from client side if server initiates
-                    await client.CloseOutputAsync(
-                        WebSocketCloseStatus.NormalClosure,
-                        "Client ack close",
-                        CancellationToken.None
-                    );
-                    break; // Exit loop
+                    _logger.LogInformation("[WS] MemoryStream is empty.");
                 }
             }
         }
-        catch (OperationCanceledException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogInformation("[WS] Recieving canceled: {ex}", ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogInformation("[WS] Unexpected exception {ex}", ex.Message);
+            _logger.LogError(ex, "[WS] Fatal loop error");
         }
     }
+
 
     public async Task SendMessageAsync(CancellationToken token, string symbol, bool isSubscribe)
     {
         var client = _webSocketClient;
         if (client == null)
         {
-            _logger.LogWarning("[WS] Cannot send {Action} for {Symbol}: No active connection.",
-                        isSubscribe ? "subscription" : "unsubscription", symbol);
             return;
         }
         if (isSubscribe)
         {
-            try
-            {
-                _logger.LogInformation("Subscribing to {}", symbol);
-                var message = new FinnhubWebsocketSubscriptionMessage
-                {
-                    Type = "subscribe",
-                    Symbol = symbol,
-                };
-                byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message));
-                await client.SendAsync(
-                    new ArraySegment<byte>(bytesToSend),
-                    WebSocketMessageType.Text,
-                    true,
-                    token
-                );
-                _logger.LogInformation($"[WS] Sent: '{message.Symbol}'");
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("[WS] Sending cancelled.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogInformation($"[WS] Error sending: {ex.Message}");
-            }
+            await SendNewSubscriptionAsync(symbol, token, client);
         }
         else
         {
-            try
+            await SendNewUnsubscriptionAsync(symbol, token, client);
+        }
+    }
+
+    private async Task SendNewSubscriptionAsync(string symbol, CancellationToken token, ClientWebSocket client)
+    {
+        try
+        {
+            var message = new FinnhubWebsocketSubscriptionMessage
             {
-                _logger.LogInformation("Unsubscribing from {}", symbol);
-                var message = new FinnhubWebsocketSubscriptionMessage
-                {
-                    Type = "unsubscribe",
-                    Symbol = symbol,
-                };
-                byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message));
-                await client.SendAsync(
-                    new ArraySegment<byte>(bytesToSend),
-                    WebSocketMessageType.Text,
-                    true,
-                    token
+                Type = "subscribe",
+                Symbol = symbol,
+            };
+            byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            await client.SendAsync(
+                new ArraySegment<byte>(bytesToSend),
+                WebSocketMessageType.Text,
+                true,
+                token
                 );
-                _logger.LogInformation($"[WS] Sent: '{message.Symbol}'");
-            }
-            catch (OperationCanceledException)
+            _logger.LogInformation($"[WS]Subscribe Sent: '{message.Symbol}'");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("[WS] Sending cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"[WS] Error sending: {ex.Message}");
+        }
+    }
+
+    private async Task SendNewUnsubscriptionAsync(string symbol, CancellationToken token, ClientWebSocket client)
+    {
+        try
+        {
+            var message = new FinnhubWebsocketSubscriptionMessage
             {
-                _logger.LogInformation("[WS] Sending cancelled.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogInformation($"[WS] Error sending: {ex.Message}");
-            }
+                Type = "unsubscribe",
+                Symbol = symbol,
+            };
+            byte[] bytesToSend = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+            await client.SendAsync(
+                new ArraySegment<byte>(bytesToSend),
+                WebSocketMessageType.Text,
+                true,
+                token
+                );
+            _logger.LogInformation($"[WS]Unsubscribe Sent: '{message.Symbol}'");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("[WS] Sending cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogInformation($"[WS] Error sending: {ex.Message}");
         }
     }
 }

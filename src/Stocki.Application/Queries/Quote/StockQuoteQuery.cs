@@ -10,10 +10,6 @@ public record StockQuoteQuery : IRequest<StockQuote?>
 
     public StockQuoteQuery(TickerSymbol s)
     {
-        if (s == null)
-        {
-            throw new ArgumentNullException("TickerSymbol object must be provided");
-        }
         Symbol = s;
     }
 }

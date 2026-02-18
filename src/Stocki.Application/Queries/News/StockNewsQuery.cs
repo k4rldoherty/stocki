@@ -13,8 +13,6 @@ public record StockNewsQuery : IRequest<List<StockNewsArticle>?>
 
     public StockNewsQuery(TickerSymbol s)
     {
-        if (s == null)
-            throw new ArgumentNullException("Symbol must have a value");
         Symbol = s;
     }
 }

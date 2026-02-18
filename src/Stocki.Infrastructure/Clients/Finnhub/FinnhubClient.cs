@@ -1,13 +1,12 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.News;
 using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Models;
-using Stocki.Infrastructure.Clients.Finnhub;
 using Stocki.Infrastructure.Clients.Finnhub.DTOs;
 using Stocki.Shared.Config;
 using Stocki.Shared.Models;
@@ -34,7 +33,7 @@ public class FinnhubClient : IFinnhubClient
         _settings = settings;
     }
 
-    public async Task<ApiResponse<StockQuote>> GetStockQuoteAsync(
+    public async ValueTask<ApiResponse<StockQuote>> GetStockQuoteAsync(
         StockQuoteQuery q,
         CancellationToken t
     )
@@ -42,62 +41,29 @@ public class FinnhubClient : IFinnhubClient
         var url = $"{_settings.Value.BaseUrl}quote?symbol={q.Symbol.Value}";
         if (_cache.TryGetValue(url, out StockQuote? CacheRes) && CacheRes is not null)
         {
-            _logger.LogInformation($"Query retrieved from cache: {url}");
             return ApiResponse<StockQuote>.Success(CacheRes);
         }
         try
         {
-            var res = await _client.GetAsync(url, t);
-            if (res.StatusCode != HttpStatusCode.OK)
-            {
-                _logger.LogWarning($"API returned status code {res.StatusCode}");
-                return ApiResponse<StockQuote>.Failure(
-                    "Failed to retrieve the data from Finnhub",
-                    res.StatusCode
-                );
-            }
-            string resStr = await res.Content.ReadAsStringAsync();
-            if (string.IsNullOrEmpty(resStr))
-            {
-                _logger.LogError("Response was empty");
-                return ApiResponse<StockQuote>.Failure(
-                    "Failed to retrieve the data from Finnhub",
-                    res.StatusCode
-                );
-            }
+            using var res = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, t);
+            if (!res.IsSuccessStatusCode)
+                return ApiResponse<StockQuote>.Failure("Failed to retrieve the data from Finnhub", res.StatusCode);
 
-            FHStockQuoteDTO? stockQuoteDTO = JsonConvert.DeserializeObject<FHStockQuoteDTO>(resStr);
+            using var contentStream = await res.Content.ReadAsStreamAsync(cancellationToken: t);
+            var stockQuoteDTO = await JsonSerializer.DeserializeAsync<FHStockQuoteDTO>(contentStream, cancellationToken: t);
+            if (stockQuoteDTO is null || stockQuoteDTO.DifferencePercentage is null)
+                return ApiResponse<StockQuote>.Failure("Failed to deserialize the data from Finnhub", res.StatusCode);
 
-            if (stockQuoteDTO is null || stockQuoteDTO.DifferencePercentage == null)
-            {
-                _logger.LogWarning("Serialized object was null");
-                return ApiResponse<StockQuote>.Failure(
-                    $"Failed to serialize Stock Quote DTO object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.OK
-                );
-            }
-
-            var returnObj = FinnhubMappingHelper.MapStockQuote(
-                stockQuoteDTO,
+            var returnObj = new StockQuote(
                 q.Symbol.Value,
-                _logger
+                stockQuoteDTO.CurrentPrice,
+                stockQuoteDTO.OpenPrice,
+                stockQuoteDTO.PreviousClosePrice,
+                stockQuoteDTO.HighPrice,
+                stockQuoteDTO.LowPrice
             );
-            if (returnObj == null)
-            {
-                _logger.LogError("Problem mapping object");
-                return ApiResponse<StockQuote>.Failure(
-                    $"Failed to parse Stock Quote object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.OK
-                );
-            }
-            _logger.LogInformation("Object mapped successfully");
-            _cache.Set(url, returnObj, absoluteExpiration: DateTime.UtcNow.AddMinutes(5));
+            _cache.Set(url, returnObj, TimeSpan.FromMinutes(5));
             return ApiResponse<StockQuote>.Success(returnObj, res.StatusCode);
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex.Message);
-            return ApiResponse<StockQuote>.Failure(ex.Message, HttpStatusCode.InternalServerError);
         }
         catch (Exception ex)
         {
@@ -109,81 +75,53 @@ public class FinnhubClient : IFinnhubClient
         }
     }
 
-    public async Task<ApiResponse<List<StockNewsArticle>>> GetCompanyNewsAsync(
+    public async ValueTask<ApiResponse<List<StockNewsArticle>>> GetCompanyNewsAsync(
         StockNewsQuery q,
         CancellationToken c
     )
     {
+        var url =
+            $"{_settings.Value.BaseUrl}company-news?symbol={q.Symbol.Value}&from={DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-dd")}&to={DateTime.UtcNow.ToString("yyyy-MM-dd")}";
+        if (
+            _cache.TryGetValue($"news-{q.Symbol.Value}", out List<StockNewsArticle>? CacheRes)
+            && CacheRes != null
+        )
+        {
+            return ApiResponse<List<StockNewsArticle>>.Success(CacheRes);
+        }
         try
         {
-            // TODO: Make the to and from dates changeable for older news / specific ranges
-            var url =
-                $"{_settings.Value.BaseUrl}company-news?symbol={q.Symbol.Value}&from={DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-dd")}&to={DateTime.UtcNow.ToString("yyyy-MM-dd")}";
-            if (
-                _cache.TryGetValue($"news-{q.Symbol.Value}", out List<StockNewsArticle>? CacheRes)
-                && CacheRes != null
-            )
+            using var res = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, c);
+            if (!res.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Retrieved from cache");
-                return ApiResponse<List<StockNewsArticle>>.Success(CacheRes);
-            }
-            var res = await _client.GetAsync(url, c);
-            if (res.StatusCode != HttpStatusCode.OK)
-            {
-                _logger.LogWarning($"API returned status code {res.StatusCode}");
                 return ApiResponse<List<StockNewsArticle>>.Failure(
                     $"Finnhub returned status code {res.StatusCode}",
                     res.StatusCode
                 );
             }
-            string resStr = await res.Content.ReadAsStringAsync();
-            if (string.IsNullOrEmpty(resStr) || resStr.Equals("[]"))
-            {
-                _logger.LogWarning("Response was empty");
-                return ApiResponse<List<StockNewsArticle>>.Failure(
-                    $"No data retrieved for this ticker",
-                    res.StatusCode
-                );
-            }
 
-            List<FHStockNewsArticleDTO>? dto = JsonConvert.DeserializeObject<
-                List<FHStockNewsArticleDTO>
-            >(resStr);
+            using var contentStream = await res.Content.ReadAsStreamAsync(cancellationToken: c);
+            var dto = await JsonSerializer.DeserializeAsync<List<FHStockNewsArticleDTO>>(contentStream, cancellationToken: c);
 
             if (dto == null)
             {
-                _logger.LogWarning("Serialized object was null");
                 return ApiResponse<List<StockNewsArticle>>.Failure(
                     $"Failed to serialize Stock News DTO object for ticker {q.Symbol.Value}.",
                     HttpStatusCode.InternalServerError
                 );
             }
 
-            var returnObj = FinnhubMappingHelper.MapStockNews(dto, q.Symbol.Value, _logger);
+            var returnObj = dto
+              .Take(3)
+              .Select(a => new StockNewsArticle(a.TimeStamp, a.Headline, a.Image, a.Source, a.Summary, a.Url))
+              .ToList();
 
-            if (returnObj == null)
-            {
-                _logger.LogError("Problem mapping object");
-                return ApiResponse<List<StockNewsArticle>>.Failure(
-                    $"Failed to parse Stock News object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.InternalServerError
-                );
-            }
             _cache.Set(
                 $"news-{q.Symbol.Value}",
                 returnObj,
                 absoluteExpiration: DateTime.UtcNow.AddDays(1)
             );
-            _logger.LogInformation("Object mapped and data cached successfully");
             return ApiResponse<List<StockNewsArticle>>.Success(returnObj, res.StatusCode);
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex.Message);
-            return ApiResponse<List<StockNewsArticle>>.Failure(
-                ex.Message,
-                HttpStatusCode.InternalServerError
-            );
         }
         catch (Exception ex)
         {

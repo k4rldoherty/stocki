@@ -1,14 +1,14 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Stocki.Infrastructure.Clients.Finnhub.DTOs;
 
 public record FHStockQuoteDTO(
-    [JsonProperty("c")] string? CurrentPrice,
-    [JsonProperty("h")] string? HighPrice,
-    [JsonProperty("l")] string? LowPrice,
-    [JsonProperty("o")] string? OpenPrice,
-    [JsonProperty("pc")] string? PreviousClosePrice,
-    [JsonProperty("dp")] string? DifferencePercentage,
-    [JsonProperty("d")] string? Difference,
-    [JsonProperty("t")] string? Timestamp
+    [property: JsonPropertyName("c")] decimal CurrentPrice,
+    [property: JsonPropertyName("h")] decimal HighPrice,
+    [property: JsonPropertyName("l")] decimal LowPrice,
+    [property: JsonPropertyName("o")] decimal OpenPrice,
+    [property: JsonPropertyName("pc")] decimal PreviousClosePrice,
+    [property: JsonPropertyName("dp")] decimal? DifferencePercentage,
+    [property: JsonPropertyName("d")] decimal? Difference,
+    [property: JsonPropertyName("t")] long Timestamp
 );

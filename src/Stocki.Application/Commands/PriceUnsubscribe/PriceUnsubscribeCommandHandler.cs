@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Quote;
 using Stocki.Domain.Interfaces;
-using Stocki.Domain.Models;
 using Stocki.Shared.Notifications;
 
 namespace Stocki.Application.Commands.PriceUnsubscribe;

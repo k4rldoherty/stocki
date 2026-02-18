@@ -5,10 +5,10 @@ namespace Stocki.Shared.Notifications;
 public record PriceMovedBeyondThresholdNotification : INotification
 {
     public string Symbol { get; set; }
-    public double Price { get; set; }
-    public double PercentChange { get; set; }
+    public decimal Price { get; set; }
+    public decimal PercentChange { get; set; }
 
-    public PriceMovedBeyondThresholdNotification(string symbol, double price, double percentChange)
+    public PriceMovedBeyondThresholdNotification(string symbol, decimal price, decimal percentChange)
     {
         Symbol = symbol;
         Price = price;

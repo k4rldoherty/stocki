@@ -1,30 +1,30 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Stocki.PriceMonitor.Models;
 
-public struct FinnhubStockPriceRecievedMessage
+public readonly struct FinnhubStockPriceReceivedMessage
 {
-    [JsonProperty("data")]
-    public WSDataObj[] Data { get; set; }
+    [JsonPropertyName("data")]
+    public WSDataObj[] Data { get; init; }
 
-    [JsonProperty("type")]
-    public string Type { get; set; }
+    [JsonPropertyName("type")]
+    public string Type { get; init; }
 }
 
-public struct WSDataObj
+public readonly struct WSDataObj
 {
-    [JsonProperty("c")]
-    public string[] Category { get; set; }
+    [JsonPropertyName("c")]
+    public string[]? Category { get; init; }
 
-    [JsonProperty("p")]
-    public double Price { get; set; }
+    [JsonPropertyName("p")]
+    public decimal Price { get; init; }
 
-    [JsonProperty("s")]
-    public string Symbol { get; set; }
+    [JsonPropertyName("s")]
+    public string Symbol { get; init; }
 
-    [JsonProperty("t")]
-    public ulong Timestamp { get; set; }
+    [JsonPropertyName("t")]
+    public ulong Timestamp { get; init; }
 
-    [JsonProperty("v")]
-    public long Volume { get; set; }
+    [JsonPropertyName("v")]
+    public decimal Volume { get; init; }
 }

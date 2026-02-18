@@ -7,17 +7,17 @@ public record StockNewsArticle
     public String? ImageUrl;
     public String Source = string.Empty;
     public String Summary = string.Empty;
-    public String Url = string.Empty;
+    public String? Url = string.Empty;
 
     public StockNewsArticle() { }
 
     public StockNewsArticle(
-        String timeStamp,
+        long timeStamp,
         String headline,
         String imageUrl,
         String source,
         String summary,
-        String url
+        String? url
     )
     {
         DateOfArticle = ConvertTimestampToDatetime(timeStamp);
@@ -28,13 +28,8 @@ public record StockNewsArticle
         Url = url;
     }
 
-    private DateTime ConvertTimestampToDatetime(string ts)
+    private DateTime ConvertTimestampToDatetime(long ts)
     {
-        if (double.TryParse(ts, out var timeStamp))
-        {
-            return DateTime.UnixEpoch.AddSeconds(timeStamp);
-        }
-        // Not perfect but will do for now
-        return DateTime.Now;
+        return DateTime.UnixEpoch.AddSeconds(ts);
     }
 }

@@ -8,7 +8,7 @@ namespace Stocki.PriceMonitor.Services;
 
 public class PriceChecker
 {
-    public ConcurrentDictionary<string, double> _stockPrices { get; set; } = new();
+    public ConcurrentDictionary<string, decimal> _stockPrices = new ConcurrentDictionary<string, decimal>();
     private readonly ILogger<PriceChecker> _logger;
     private IMediator _mediator;
 
@@ -18,20 +18,21 @@ public class PriceChecker
         _mediator = mediator;
     }
 
-    public void CheckPrice(FinnhubStockPriceRecievedMessage msg, double percentageThreshold)
+    public void CheckPrice(FinnhubStockPriceReceivedMessage msg, decimal percentageThreshold)
     {
         foreach (var t in msg.Data)
         {
             if (!_stockPrices.TryGetValue(t.Symbol, out var currPrice))
             {
-                _stockPrices.TryAdd(t.Symbol, 0.0);
+                _logger.LogInformation("Price for {} is null", t);
+                _stockPrices.TryAdd(t.Symbol, 0m);
             }
             else
             {
                 var priceChange = GetPercentageDifference(t.Price, currPrice);
+                _logger.LogInformation("Price for {} has changed {}%", t.Symbol, priceChange);
                 if (priceChange >= percentageThreshold)
                 {
-                    _logger.LogInformation("Price for {} has changed {}%", t.Symbol, percentageThreshold);
                     _stockPrices.TryUpdate(t.Symbol, t.Price, currPrice);
                     _mediator.Publish(
                         new PriceMovedBeyondThresholdNotification(t.Symbol, t.Price, priceChange)
@@ -52,7 +53,7 @@ public class PriceChecker
         }
     }
 
-    private double GetPercentageDifference(double newPrice, double oldPrice)
+    public decimal GetPercentageDifference(decimal newPrice, decimal oldPrice)
     {
         if (oldPrice == 0)
             return 0;
