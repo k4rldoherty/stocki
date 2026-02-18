@@ -7,7 +7,7 @@ public record StockNewsArticle
     public String? ImageUrl;
     public String Source = string.Empty;
     public String Summary = string.Empty;
-    public String Url = string.Empty;
+    public String? Url = string.Empty;
 
     public StockNewsArticle() { }
 
@@ -17,7 +17,7 @@ public record StockNewsArticle
         String imageUrl,
         String source,
         String summary,
-        String url
+        String? url
     )
     {
         DateOfArticle = ConvertTimestampToDatetime(timeStamp);
