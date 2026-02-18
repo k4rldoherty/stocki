@@ -10,10 +10,6 @@ public record PriceSubscribeCommand : IRequest<bool>
 
     public PriceSubscribeCommand(TickerSymbol s, ulong discordId)
     {
-        if (s == null)
-        {
-            throw new ArgumentNullException("TickerSymbol object must be provided");
-        }
         Symbol = s;
         DiscordId = discordId;
     }

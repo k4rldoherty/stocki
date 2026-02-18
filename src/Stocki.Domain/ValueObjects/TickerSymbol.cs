@@ -1,6 +1,6 @@
 namespace Stocki.Domain.ValueObjects;
 
-public record TickerSymbol
+public record struct TickerSymbol
 {
     public string Value { get; set; }
 

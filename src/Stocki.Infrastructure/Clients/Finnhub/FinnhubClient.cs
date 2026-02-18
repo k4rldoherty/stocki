@@ -55,15 +55,14 @@ public class FinnhubClient : IFinnhubClient
             if (stockQuoteDTO is null || stockQuoteDTO.DifferencePercentage is null)
                 return ApiResponse<StockQuote>.Failure("Failed to deserialize the data from Finnhub", res.StatusCode);
 
-            var returnObj = FinnhubMappingHelper.MapStockQuote(stockQuoteDTO, q.Symbol.Value, _logger);
-            if (returnObj == null)
-            {
-                _logger.LogError("Problem mapping object");
-                return ApiResponse<StockQuote>.Failure(
-                    $"Failed to parse Stock Quote object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.InternalServerError
-                );
-            }
+            var returnObj = new StockQuote(
+                q.Symbol.Value,
+                stockQuoteDTO.CurrentPrice,
+                stockQuoteDTO.OpenPrice,
+                stockQuoteDTO.PreviousClosePrice,
+                stockQuoteDTO.HighPrice,
+                stockQuoteDTO.LowPrice
+            );
             _cache.Set(url, returnObj, TimeSpan.FromMinutes(5));
             return ApiResponse<StockQuote>.Success(returnObj, res.StatusCode);
         }
@@ -93,7 +92,6 @@ public class FinnhubClient : IFinnhubClient
         }
         try
         {
-            // TODO: Make the to and from dates changeable for older news / specific ranges
             using var res = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, c);
             if (!res.IsSuccessStatusCode)
             {
@@ -114,16 +112,11 @@ public class FinnhubClient : IFinnhubClient
                 );
             }
 
-            var returnObj = FinnhubMappingHelper.MapStockNews(dto, q.Symbol.Value, _logger);
+            var returnObj = dto
+              .Take(3)
+              .Select(a => new StockNewsArticle(a.TimeStamp, a.Headline, a.Image, a.Source, a.Summary, a.Url))
+              .ToList();
 
-            if (returnObj == null)
-            {
-                _logger.LogError("Problem mapping object");
-                return ApiResponse<List<StockNewsArticle>>.Failure(
-                    $"Failed to parse Stock News object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.InternalServerError
-                );
-            }
             _cache.Set(
                 $"news-{q.Symbol.Value}",
                 returnObj,

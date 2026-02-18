@@ -12,7 +12,7 @@ public record StockNewsArticle
     public StockNewsArticle() { }
 
     public StockNewsArticle(
-        String timeStamp,
+        long timeStamp,
         String headline,
         String imageUrl,
         String source,
@@ -28,13 +28,8 @@ public record StockNewsArticle
         Url = url;
     }
 
-    private DateTime ConvertTimestampToDatetime(string ts)
+    private DateTime ConvertTimestampToDatetime(long ts)
     {
-        if (double.TryParse(ts, out var timeStamp))
-        {
-            return DateTime.UnixEpoch.AddSeconds(timeStamp);
-        }
-        // Not perfect but will do for now
-        return DateTime.Now;
+        return DateTime.UnixEpoch.AddSeconds(ts);
     }
 }

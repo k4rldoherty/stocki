@@ -75,7 +75,7 @@ public class PriceMonitoringService
             }
             else
             {
-                _priceChecker._stockPrices.TryAdd(notification.Symbol, 0.0);
+                _priceChecker._stockPrices.TryAdd(notification.Symbol, 0m);
             }
         }
     }

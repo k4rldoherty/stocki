@@ -1,6 +1,7 @@
 ﻿using Stocki.Bot.Chat;
 using Stocki.Bot.Setup;
 using Stocki.Domain.Interfaces;
+using Stocki.PriceMonitoringService.Interfaces;
 using Stocki.Infrastructure.Persistance.Repositories;
 using Stocki.NotificationService;
 using Stocki.PriceMonitor.Services;

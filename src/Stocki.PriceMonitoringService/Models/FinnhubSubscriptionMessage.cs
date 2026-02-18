@@ -1,12 +1,12 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Stocki.PriceMonitor.Models;
 
 public struct FinnhubWebsocketSubscriptionMessage
 {
-    [JsonProperty("type")]
+    [JsonPropertyName("type")]
     public string Type { get; set; }
 
-    [JsonProperty("symbol")]
+    [JsonPropertyName("symbol")]
     public string Symbol { get; set; }
 }

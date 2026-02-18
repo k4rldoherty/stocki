@@ -1,15 +1,15 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Stocki.Infrastructure.Clients.Finnhub.DTOs;
 
 public record FHStockNewsArticleDTO(
-    [JsonProperty("category")] string Category,
-    [JsonProperty("datetime")] string TimeStamp,
-    [JsonProperty("headline")] string Headline,
-    [JsonProperty("id")] string Id,
-    [JsonProperty("image")] string Image,
-    [JsonProperty("related")] string Related,
-    [JsonProperty("source")] string Source,
-    [JsonProperty("summary")] string Summary,
-    [JsonProperty("url")] string Url
+    [property: JsonPropertyName("id")] long Id,
+    [property: JsonPropertyName("category")] string Category,
+    [property: JsonPropertyName("datetime")] long TimeStamp,
+    [property: JsonPropertyName("headline")] string Headline,
+    [property: JsonPropertyName("image")] string Image,
+    [property: JsonPropertyName("related")] string Related,
+    [property: JsonPropertyName("source")] string Source,
+    [property: JsonPropertyName("summary")] string Summary,
+    [property: JsonPropertyName("url")] string? Url
 );
