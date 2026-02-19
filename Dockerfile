@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 WORKDIR /app
 
-COPY ["src/Stocki.Bot/Stocki.Bot.csproj", "src/Stocki.Bot/"]
+COPY ["src/Stocki.Discord/Stocki.Discord.csproj", "src/Stocki.Discord/"]
 COPY ["src/Stocki.Application/Stocki.Application.csproj", "src/Stocki.Application/"]
 COPY ["src/Stocki.Domain/Stocki.Domain.csproj", "src/Stocki.Domain/"]
 COPY ["src/Stocki.Infrastructure/Stocki.Infrastructure.csproj", "src/Stocki.Infrastructure/"]
@@ -10,16 +10,16 @@ COPY ["src/Stocki.PriceMonitoringService/Stocki.PriceMonitoringService.csproj", 
 COPY ["src/Stocki.NotificationService/Stocki.NotificationService.csproj", "src/Stocki.NotificationService/"]
 COPY ["src/Stocki.Shared/Stocki.Shared.csproj", "src/Stocki.Shared/"]
 
-RUN dotnet restore "src/Stocki.Bot/Stocki.Bot.csproj"
+RUN dotnet restore "src/Stocki.Discord/Stocki.Discord.csproj"
 
 COPY . .
 
-WORKDIR /app/src/Stocki.Bot
-RUN dotnet publish "Stocki.Bot.csproj" -c Release -o /app/publish /p:UseAppHost=false
+WORKDIR /app/src/Stocki.Discord
+RUN dotnet publish "Stocki.Discord.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 COPY --from=build-env /app/publish .
 
-ENTRYPOINT ["dotnet", "Stocki.Bot.dll"]
+ENTRYPOINT ["dotnet", "Stocki.Discord.dll"]

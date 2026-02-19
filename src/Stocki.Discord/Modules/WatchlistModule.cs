@@ -1,31 +1,32 @@
 using Discord;
 using Discord.Interactions;
 using MediatR;
+using Microsoft.Extensions.Options;
 using Stocki.Application.Commands.PriceSubscribe;
 using Stocki.Application.Commands.PriceUnsubscribe;
 using Stocki.Application.Queries.Subscription;
 using Stocki.Domain.Models;
-using Stocki.Shared.Config;
 using Stocki.Domain.ValueObjects;
+using Stocki.Shared.Config;
 
-namespace Stocki.Bot.Commands;
+namespace Stocki.Discord.Modules;
 
-public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionContext>
+public class WatchlistModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly ILogger<PriceSubscribeCommand> _logger;
+    private readonly ILogger<WatchlistModule> _logger;
     private readonly IMediator _mediator;
-    private readonly FinnhubWebsocketsSettings _finnhubWebsocketsSettings;
+    private readonly FinnhubWebsocketsSettings _settings;
 
-    public PriceSubscribeCommands(ILogger<PriceSubscribeCommand> logger, IMediator m, FinnhubWebsocketsSettings settings)
+    public WatchlistModule(ILogger<WatchlistModule> logger, IMediator m, IOptions<FinnhubWebsocketsSettings> settings)
     {
         _logger = logger;
         _mediator = m;
-        _finnhubWebsocketsSettings = settings;
+        _settings = settings.Value;
     }
 
-    [SlashCommand("price-subscribe", "Subscribes a user to price action changes in a stock")]
-    public async Task HandlePriceSubscribeAsync(
-        [Summary("ticker", "the ticker of the stock you want to subscribe to e.g. AAPL")]
+    [SlashCommand("add-to-watchlist", "Watchlist a stock and get a DM if it moves +/-5%")]
+    public async Task AddStockToWatchlistAsync(
+        [Summary("ticker", "the ticker of the stock you want to watch to e.g. AAPL")]
       string ticker
         )
     {
@@ -35,25 +36,21 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
         {
             TickerSymbol symbol = new TickerSymbol(ticker);
             PriceSubscribeCommand command = new(symbol, Context.User.Id);
-            _logger.LogInformation("Received /price-subscribe command for ticker {Ticker}", ticker);
-            var subscribed = await _mediator.Send(command, CancellationToken.None);
-            if (subscribed)
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var isWatchlisted = await _mediator.Send(command, cts.Token);
+            if (isWatchlisted)
             {
-                _logger.LogInformation(
-                    "The /price-subscribe request succeeded for ticker {Ticker}",
-                    ticker
-                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                    .WithTitle("Subscribed!") // Clear, user-centric title
-                    .AddField("Success!", $"You have sucessfully subscribed to {ticker}")
+                    .WithTitle($"{ticker} added to watchlist!") // Clear, user-centric title
+                    .AddField("Success!", $"You have sucessfully watchlisted {ticker}")
                     .AddField(
                       "Info",
-                      $"You will now recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
+                      $"You will now recieve real time updates when {ticker} moves up or down {_settings.PriceChangePercentage}%"
                       )
                     .AddField(
-                      "Want to unsubscribe?",
-                      "To unsubscribe just use the unsubscribe command!"
+                      "Want to remove from watchlist?",
+                      "Just use the /remove-from-watchlist command!"
                       )
                     .WithColor(Color.Green) // A warning/informational color
                     .WithFooter("Stocki 2025")
@@ -62,17 +59,13 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             }
             else
             {
-                _logger.LogInformation(
-                    "The /price-subscribe request failed for ticker {Ticker}",
-                    ticker
-                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                    .WithTitle("Cannot Subscribe") // Clear, user-centric title
-                    .AddField("Message", $"You cannot sucessfully subscribe to {ticker}") // Directly use the user-friendly message from the exception
+                    .WithTitle($"Cannot Watchlist {ticker}") // Clear, user-centric title
+                    .AddField("Message", $"You cannot sucessfully watchlist {ticker}") // Directly use the user-friendly message from the exception
                     .AddField(
                       "Next Steps",
-                      "Use the /list-subscriptions command to ensure you arent already subscribed to this command and try again"
+                      "Use the /list-stock-watchlist command to ensure you arent already watching this stock and try again"
                       ) // Directly use the user-friendly message from the exception
                     .WithColor(Color.Red) // A warning/informational color
                     .WithFooter("Stocki 2025")
@@ -90,7 +83,7 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
                 .Build()
                 );
         }
-        catch (Exception ex) // Catch any other unexpected errors
+        catch (Exception ex) when (ex is not OperationCanceledException) // Catch any other unexpected errors
         {
             _logger.LogError(ex.Message);
             await FollowupAsync(
@@ -107,48 +100,44 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
     }
 
     [SlashCommand(
-        "list-price-subscriptions",
-        "Lists all the stocks you are currently subscribed to"
+        "list-stock-watchlist",
+        "Lists all the stocks you are currently watching"
         )]
-    public async Task HandleListPriceSubscriptionsAsync()
+    public async Task ListStockWatchlistAsync()
     {
         await DeferAsync();
 
         try
         {
-            _logger.LogInformation("Received /list-price-subscriptions command");
             ListPriceSubscriptionQuery Query = new(Context.User.Id);
-            List<StockPriceSubscription> subscribedStocks = await _mediator.Send(
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            List<StockPriceSubscription> watchedStocks = await _mediator.Send(
                 Query,
-                CancellationToken.None
+                cts.Token
                 );
 
-            if (subscribedStocks.Count > 0)
+            if (watchedStocks.Count > 0)
             {
                 var e = new EmbedBuilder()
-                  .WithTitle("Subscribed Stocks") // Clear, user-centric title
-                  .WithFooter("To unsubscribe just use the unsubscribe command!")
+                  .WithTitle("Watched Stocks") // Clear, user-centric title
+                  .WithFooter("To unwatch a stock just use the remove-from-watchlist command!")
                   .WithColor(Color.Green);
-                foreach (var s in subscribedStocks)
+                foreach (var s in watchedStocks)
                 {
                     string fieldName = $"**{s.Ticker} - **";
                     string fieldValue = $"\n\n{s.CreatedDate}\n\n";
                     e.AddField(fieldName, fieldValue, true);
                 }
                 await FollowupAsync(embed: e.Build());
-                _logger.LogInformation("The /list-price-subscriptions request succeeded");
             }
             else
             {
-                _logger.LogInformation(
-                    "The /list-price-subscriptions request succeeded, but the user is not subscribed to any stocks"
-                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                    .WithTitle("No Subscriptions Yet") // Clear, user-centric title
+                    .WithTitle("No Watched Stocks Yet") // Clear, user-centric title
                     .AddField(
                       "Build Your Watchlist",
-                      $"Use the /price-subscribe command to subscribe to some stocks price changes"
+                      $"Use the /add-to-watchlist command to watch some stocks price changes"
                       ) // Directly use the user-friendly message from the exception
                     .WithColor(Color.Orange) // A warning/informational color
                     .WithFooter("Stocki 2025")
@@ -156,7 +145,7 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
                     );
             }
         }
-        catch (Exception ex) // Catch any other unexpected errors
+        catch (Exception ex) when (ex is not OperationCanceledException) // Catch any other unexpected errors
         {
             _logger.LogError(ex.Message);
             await FollowupAsync(
@@ -172,9 +161,9 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
         }
     }
 
-    [SlashCommand("price-unsubscribe", "Unsubscribes a user to price action changes in a stock")]
-    public async Task HandlePriceUnsubscribeAsync(
-        [Summary("ticker", "the ticker of the stock you want to unsubscribe to e.g. AAPL")]
+    [SlashCommand("remove-from-watchlist", "Removes a stock from your watchlist")]
+    public async Task RemoveFromWatchlistAsync(
+        [Summary("ticker", "the ticker of the stock you want to remove from your watchlist e.g. AAPL")]
       string ticker
         )
     {
@@ -184,28 +173,21 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
         {
             TickerSymbol symbol = new TickerSymbol(ticker);
             PriceUnsubscribeCommand command = new(symbol, Context.User.Id);
-            _logger.LogInformation(
-                "Received /price-unsubscribe command for ticker {Ticker}",
-                ticker
-                );
-            var unsubscribed = await _mediator.Send(command, CancellationToken.None);
-            if (unsubscribed)
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var isNoLongerWatching = await _mediator.Send(command, cts.Token);
+            if (isNoLongerWatching)
             {
-                _logger.LogInformation(
-                    "The /price-unsubscribe request succeeded for ticker {Ticker}",
-                    ticker
-                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                    .WithTitle("Unsubscribed!") // Clear, user-centric title
-                    .AddField("Success!", $"You have sucessfully unsubscribed from {ticker}")
+                    .WithTitle($"{ticker} removed from watchlist!")
+                    .AddField("Success!", $"You have sucessfully removed {ticker} from your watchlist")
                     .AddField(
                       "Info",
-                      $"You will now no longer recieve real time updates when {ticker} moves up or down {_finnhubWebsocketsSettings.PriceChangePercentage}%"
+                      $"You will now no longer recieve real time updates when {ticker} moves up or down {_settings.PriceChangePercentage}%"
                       )
                     .AddField(
-                      "Want to subscribe?",
-                      "To subscribe just use the subscribe command!"
+                      "Want to re-watch?",
+                      "To subscribe just use the watchlist command!"
                       )
                     .WithColor(Color.Green) // A warning/informational color
                     .WithFooter("Stocki 2025")
@@ -214,18 +196,14 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
             }
             else
             {
-                _logger.LogWarning(
-                    "The /price-unsubscribe request failed for ticker {Ticker}",
-                    ticker
-                    );
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                    .WithTitle("Cannot unsubscribe") // Clear, user-centric title
-                    .AddField("Message", $"You cannot sucessfully unsubscribe to {ticker}") // Directly use the user-friendly message from the exception
+                    .WithTitle("Cannot unwatch") // Clear, user-centric title
+                    .AddField("Message", $"You cannot sucessfully remove {ticker} from your watchlist") // Directly use the user-friendly message from the exception
                     .AddField(
                       "Next Steps",
-                      "Use the /list-subscriptions command to ensure you are already subscribed to this command and try again"
-                      ) // Directly use the user-friendly message from the exception
+                      "Use the /list-stock-watchlist command to ensure you are actually watching this stock and try again"
+                      )
                     .WithColor(Color.Red) // A warning/informational color
                     .WithFooter("Stocki 2025")
                     .Build()
@@ -242,7 +220,7 @@ public class PriceSubscribeCommands : InteractionModuleBase<SocketInteractionCon
                 .Build()
                 );
         }
-        catch (Exception ex) // Catch any other unexpected errors
+        catch (Exception ex) when (ex is not OperationCanceledException) // Catch any other unexpected errors
         {
             _logger.LogError(ex.Message);
             await FollowupAsync(

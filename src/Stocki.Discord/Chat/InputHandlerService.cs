@@ -1,6 +1,6 @@
 using Discord.WebSocket;
 
-namespace Stocki.Bot.Chat;
+namespace Stocki.Discord.Chat;
 
 public class InputHandlerService()
 {

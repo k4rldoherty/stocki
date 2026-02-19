@@ -1,5 +1,4 @@
 using Stocki.Application.Queries.Overview;
-using Stocki.Domain.Models;
 using Stocki.Shared.Models;
 
 namespace Stocki.Application.Interfaces;
