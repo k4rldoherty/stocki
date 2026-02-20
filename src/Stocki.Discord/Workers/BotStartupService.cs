@@ -3,10 +3,10 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
-using Stocki.Bot.Chat;
+using Stocki.Discord.Chat;
 using Stocki.Shared.Config;
 
-namespace Stocki.Bot.Setup;
+namespace Stocki.Discord.Setup;
 
 public class BotStartupService : BackgroundService
 {
@@ -41,7 +41,7 @@ public class BotStartupService : BackgroundService
         _client.InteractionCreated += HandleInteractionAsync;
 
         // Hook up MessageReceived
-        _client.MessageReceived += _inputHandlerService.HandleMessageAsync; // If InputHandlerService handles generic messages
+        _client.MessageReceived += _inputHandlerService.HandleMessageAsync;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -89,33 +89,13 @@ public class BotStartupService : BackgroundService
     private async Task ClientReadyAsync()
     {
         _logger.LogInformation("Discord client is ready.");
-
-        // Clear existing commands if development flag is set
-        if (
-            bool.TryParse(
-                Environment.GetEnvironmentVariable("RESETBOTCOMMANDS"),
-                out var resetCommands
-            ) && resetCommands
-        )
-        {
-            _logger.LogWarning("RESETBOTCOMMANDS is true. Deleting all global commands...");
-            await DeleteAllCommands(_client);
-            // Small delay to allow Discord API to process deletions before re-registering
-            await Task.Delay(500);
-        }
-
-        // Discover and add all modules from the current assembly (Stocki.Bot)
-        // This scans for classes like StockCommands
-        await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _serviceProvider);
-        _logger.LogInformation(
-            $"Discovered {_interactionService.Modules.Count} interaction modules."
-        );
-
+        var modulesAdded = await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), _serviceProvider);
+        foreach (var module in modulesAdded)
+            _logger.LogInformation("Module {ModuleName} added", module.Name);
         // Register commands globally. This pushes the commands to Discord.
         try
         {
             await _interactionService.RegisterCommandsGloballyAsync(true);
-            _logger.LogInformation("Registered global slash commands.");
         }
         catch (Exception ex)
         {

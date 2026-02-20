@@ -33,7 +33,7 @@ Stocki currently supports the following slash commands:
 
 Stocki is built following **Clean Architecture** principles, enhanced by the **Mediator pattern** (using MediatR). This design ensures a highly maintainable, testable, and scalable application structure:
 
-* **Presentation Layer (`Stocki.Bot`):** Handles Discord interactions, parses commands, orchestrates requests via `IMediator`, and formats responses. It knows nothing about the business logic or data fetching.
+* **Presentation Layer (`Stocki.Discord`):** Handles Discord interactions, parses commands, orchestrates requests via `IMediator`, and formats responses. It knows nothing about the business logic or data fetching.
 * **Application Layer (`Stocki.Application`):** Contains the application's use cases.
     * **Queries/Commands:** Simple data structures defining user intents (e.g., `StockOverviewQuery`).
     * **Handlers:** Classes containing the business logic for processing a specific query or command (e.g., `StockOverviewQueryHandler`). They coordinate between domain and infrastructure layers.
