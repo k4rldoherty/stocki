@@ -7,7 +7,6 @@ COPY ["src/Stocki.Application/Stocki.Application.csproj", "src/Stocki.Applicatio
 COPY ["src/Stocki.Domain/Stocki.Domain.csproj", "src/Stocki.Domain/"]
 COPY ["src/Stocki.Infrastructure/Stocki.Infrastructure.csproj", "src/Stocki.Infrastructure/"]
 COPY ["src/Stocki.PriceMonitoringService/Stocki.PriceMonitoringService.csproj", "src/Stocki.PriceMonitoringService/"]
-COPY ["src/Stocki.NotificationService/Stocki.NotificationService.csproj", "src/Stocki.NotificationService/"]
 COPY ["src/Stocki.Shared/Stocki.Shared.csproj", "src/Stocki.Shared/"]
 
 RUN dotnet restore "src/Stocki.Discord/Stocki.Discord.csproj"

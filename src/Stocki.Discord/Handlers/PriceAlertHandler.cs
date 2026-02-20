@@ -1,46 +1,30 @@
-﻿using Discord;
+using Discord;
 using Discord.WebSocket;
-using MediatR;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Stocki.Domain.Interfaces;
 using Stocki.Shared.Notifications;
+using MediatR;
+namespace Stocki.Discord.Handlers;
 
-namespace Stocki.NotificationService;
-
-public class PriceMovedBeyondThresholdHandler
-    : INotificationHandler<PriceMovedBeyondThresholdNotification>
+public class PriceAlertHandler : INotificationHandler<PriceAlertNotification>
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly DiscordSocketClient _discordClient;
-    private readonly ILogger<PriceMovedBeyondThresholdHandler> _logger;
+    private readonly ILogger<PriceAlertHandler> _logger;
 
-    public PriceMovedBeyondThresholdHandler(
-        IServiceScopeFactory scopeFactory,
-        DiscordSocketClient discordClient,
-        ILogger<PriceMovedBeyondThresholdHandler> logger
-    )
+    public PriceAlertHandler(IServiceScopeFactory serviceScopeFactory, DiscordSocketClient discordSocketClient, ILogger<PriceAlertHandler> logger)
     {
-        _scopeFactory = scopeFactory;
-        _discordClient = discordClient;
+        _scopeFactory = serviceScopeFactory;
+        _discordClient = discordSocketClient;
         _logger = logger;
     }
 
-    public async Task Handle(
-        PriceMovedBeyondThresholdNotification notification,
-        CancellationToken token
-    )
+    public async Task Handle(PriceAlertNotification notification,
+        CancellationToken token)
     {
         using (var scope = _scopeFactory.CreateScope())
         {
             var repo = scope.ServiceProvider.GetRequiredService<IStockPriceSubscriptionRepository>();
             var users = await repo.GetAllUsersSubscribedToAStock(notification.Symbol, token);
-            // Message each user
-            _logger.LogInformation(
-                "Found {} users subscribed to {}",
-                users.Count().ToString(),
-                notification.Symbol
-            );
             foreach (var u in users)
             {
                 var userInfo = await _discordClient.GetUserAsync(u);

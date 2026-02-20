@@ -6,7 +6,6 @@ using Stocki.Shared.Config;
 using Stocki.PriceMonitor.Services;
 using Stocki.Discord.Setup;
 using Stocki.Discord.Chat;
-using Stocki.NotificationService;
 
 namespace Stocki.Discord.Extensions;
 
@@ -40,7 +39,6 @@ public static class DependencyInjection
         services.AddHostedService<BotStartupService>();
         services.AddHostedService<PriceMonitoringService>();
         services.AddSingleton<InputHandlerService>();
-        services.AddSingleton<PriceMovedBeyondThresholdHandler>();
         services.AddSingleton<FinnhubWSManager>();
         services.AddSingleton<PriceChecker>();
 

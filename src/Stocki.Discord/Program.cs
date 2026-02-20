@@ -8,9 +8,7 @@ builder.Services.AddDiscord();
 builder.Services.AddConfiguration(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+builder.Logging.ClearProviders().AddConsole();
 
 var app = builder.Build();
 
