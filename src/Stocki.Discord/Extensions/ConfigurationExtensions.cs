@@ -13,6 +13,7 @@ public static class ConfigurationExtensions
         services.Configure<FinnhubWebsocketsSettings>(
             configuration.GetSection("FinnhubWebsockets")
         );
+        services.Configure<GeminiSettings>(configuration.GetSection("Gemini"));
         return services;
     }
 }
