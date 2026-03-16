@@ -1,6 +1,7 @@
 using Discord;
 using Discord.WebSocket;
 using Stocki.Domain.Interfaces;
+using Stocki.Discord.Interfaces;
 using Stocki.Shared.Notifications;
 using MediatR;
 namespace Stocki.Discord.Handlers;
@@ -8,13 +9,13 @@ namespace Stocki.Discord.Handlers;
 public class PriceAlertHandler : INotificationHandler<PriceAlertNotification>
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly DiscordSocketClient _discordClient;
+    private readonly IDiscordClientWrapper _discordClient;
     private readonly ILogger<PriceAlertHandler> _logger;
 
-    public PriceAlertHandler(IServiceScopeFactory serviceScopeFactory, DiscordSocketClient discordSocketClient, ILogger<PriceAlertHandler> logger)
+    public PriceAlertHandler(IServiceScopeFactory serviceScopeFactory, IDiscordClientWrapper discordClient, ILogger<PriceAlertHandler> logger)
     {
         _scopeFactory = serviceScopeFactory;
-        _discordClient = discordSocketClient;
+        _discordClient = discordClient;
         _logger = logger;
     }
 

@@ -1,5 +1,6 @@
 using Discord.WebSocket;
 using Stocki.Application.Interfaces;
+using Stocki.Discord.Interfaces;
 
 namespace Stocki.Discord.Handlers;
 
@@ -7,16 +8,16 @@ public class MessageHandler
 {
     private readonly IGeminiClient _client;
     private readonly ILogger<MessageHandler> _logger;
-    private readonly DiscordSocketClient _discordClient;
+    private readonly IDiscordClientWrapper _discordClient;
 
-    public MessageHandler(IGeminiClient client, ILogger<MessageHandler> logger, DiscordSocketClient discordClient)
+    public MessageHandler(IGeminiClient client, ILogger<MessageHandler> logger, IDiscordClientWrapper discordClient)
     {
         _client = client;
         _logger = logger;
         _discordClient = discordClient;
     }
 
-    public async Task HandleMessageAsync(SocketMessage msg)
+    public async Task HandleMessageAsync(IDiscordMessage msg)
     {
         if (msg.Author.IsBot)
         {
@@ -24,7 +25,7 @@ public class MessageHandler
         }
 
         var mentions = msg.MentionedUsers;
-        if (!mentions.Any(u => u.Id == _discordClient.CurrentUser.Id))
+        if (!mentions.Any(u => u.Id == _discordClient.CurrentUserId))
             return;
 
         var prompt = msg.Content;

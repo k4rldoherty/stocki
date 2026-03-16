@@ -30,5 +30,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Stocki.Application\Stocki.Application.csproj" />
+    <ProjectReference Include="..\..\src\Stocki.Discord\Stocki.Discord.csproj" />
   </ItemGroup>
 </Project>

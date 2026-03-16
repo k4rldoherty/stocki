@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
 using Stocki.Discord.Handlers;
+using Stocki.Discord.Interfaces;
 using Stocki.Discord.Setup;
 using Stocki.PriceMonitor.Services;
 using Stocki.Shared.Config;
@@ -35,6 +36,8 @@ public static class DependencyInjection
                 DefaultRunMode = RunMode.Async
             }
         ));
+
+        services.AddSingleton<IDiscordClientWrapper, DiscordClientWrapper>();
 
         services.AddHostedService<BotStartupService>();
         services.AddHostedService<PriceMonitoringService>();

@@ -4,6 +4,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
 using Stocki.Discord.Handlers;
+using Stocki.Discord.Interfaces;
 using Stocki.Shared.Config;
 
 namespace Stocki.Discord.Setup;
@@ -41,7 +42,13 @@ public class BotStartupService : BackgroundService
         _client.InteractionCreated += HandleInteractionAsync;
 
         // Hook up MessageReceived
-        _client.MessageReceived += _messageHandler.HandleMessageAsync;
+        _client.MessageReceived += HandleMessageReceivedAsync;
+    }
+
+    private async Task HandleMessageReceivedAsync(SocketMessage msg)
+    {
+        var wrappedMessage = new DiscordMessageWrapper(msg);
+        await _messageHandler.HandleMessageAsync(wrappedMessage);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
