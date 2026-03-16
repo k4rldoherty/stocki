@@ -2,10 +2,10 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
-using Stocki.Shared.Config;
-using Stocki.PriceMonitor.Services;
+using Stocki.Discord.Handlers;
 using Stocki.Discord.Setup;
-using Stocki.Discord.Chat;
+using Stocki.PriceMonitor.Services;
+using Stocki.Shared.Config;
 
 namespace Stocki.Discord.Extensions;
 

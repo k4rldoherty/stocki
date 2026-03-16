@@ -3,7 +3,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
-using Stocki.Discord.Chat;
+using Stocki.Discord.Handlers;
 using Stocki.Shared.Config;
 
 namespace Stocki.Discord.Setup;

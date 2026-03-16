@@ -1,7 +1,7 @@
 using Discord.WebSocket;
 using Stocki.Application.Interfaces;
 
-namespace Stocki.Discord.Chat;
+namespace Stocki.Discord.Handlers;
 
 public class MessageHandler
 {
