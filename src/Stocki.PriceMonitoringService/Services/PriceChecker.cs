@@ -35,9 +35,8 @@ public class PriceChecker
                 {
                     _stockPrices.TryUpdate(t.Symbol, t.Price, currPrice);
                     _mediator.Publish(
-                        new PriceMovedBeyondThresholdNotification(t.Symbol, t.Price, priceChange)
+                        new PriceAlertNotification(t.Symbol, t.Price, currPrice)
                     );
-                    // FIX: To prevent multiple messages when there are lots of trades in a message, fix in future
                     break;
                 }
                 else

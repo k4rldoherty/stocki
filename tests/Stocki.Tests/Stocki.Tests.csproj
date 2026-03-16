@@ -21,7 +21,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Moq" Version="4.20.72" /> 
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" /> 
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" /> 
   </ItemGroup>
 
   <ItemGroup>
@@ -30,5 +31,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Stocki.Application\Stocki.Application.csproj" />
+    <ProjectReference Include="..\..\src\Stocki.Discord\Stocki.Discord.csproj" />
   </ItemGroup>
 </Project>

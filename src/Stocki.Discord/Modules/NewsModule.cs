@@ -2,64 +2,55 @@ using Discord;
 using Discord.Interactions;
 using MediatR;
 using Stocki.Application.Exceptions;
-using Stocki.Application.Queries.Quote;
-using Stocki.Domain.Models;
+using Stocki.Application.Queries.News;
 using Stocki.Domain.ValueObjects;
 
-namespace Stocki.Bot.Commands;
+namespace Stocki.Discord.Modules;
 
-public class QuoteCommand : InteractionModuleBase<SocketInteractionContext>
+public class NewsModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly ILogger<QuoteCommand> _logger;
+    private readonly ILogger<NewsModule> _logger;
     private readonly IMediator _mediator;
 
-    public QuoteCommand(ILogger<QuoteCommand> logger, IMediator m)
+    public NewsModule(ILogger<NewsModule> logger, IMediator m)
     {
         _logger = logger;
         _mediator = m;
     }
 
-    [SlashCommand("quote", "Provides a quote view of a stock")]
-    public async Task HandleGetQuoteAsync(
-        [Summary("ticker", "the ticker of the stock you want an overview of e.g. AAPL")]
-            string ticker
+    [SlashCommand("news", "gets recent news articles for a given stock eg .AAPL")]
+    public async Task HandleGetCompanyNewsAsync(
+        [Summary("ticker", "the ticker of the stock you are querying eg AAPL")] string ticker
     )
     {
         await DeferAsync();
-
         try
         {
-            TickerSymbol symbol = new TickerSymbol(ticker);
-            StockQuoteQuery query = new(symbol);
-
-            _logger.LogInformation("Received /quote command for ticker {Ticker}", ticker);
-
-            StockQuote? quote = await _mediator.Send(query, CancellationToken.None);
-
+            var symbol = new TickerSymbol(ticker);
+            var query = new StockNewsQuery(symbol);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var articles = await _mediator.Send(query, cancellationToken: cts.Token);
             var embedBuilder = new EmbedBuilder();
-
-            if (quote is not null)
+            if (articles != null)
             {
-                _logger.LogInformation("The /quote request succeeded for ticker {Ticker}", ticker);
-                await FollowupAsync(
-                    embed: embedBuilder
-                        .WithTitle($"{quote.Ticker} - Stock Quote ({DateTime.Now})")
-                        .AddField("Current Price", $"${quote.CurrentPrice:F2}")
-                        .AddField("Opening Price", $"${quote.OpeningPrice:F2}")
-                        .AddField("Previous Close", $"${quote.ClosingPrice:F2}")
-                        .AddField("High", $"${quote.High:F2}")
-                        .AddField("Low", $"${quote.Low:F2}")
-                        .WithColor(Color.Blue)
-                        .WithFooter("Data provided by Finnhub")
-                        .Build()
-                );
+                embedBuilder.WithTitle($"News articles for {ticker.ToUpper()}");
+                embedBuilder.WithFooter($"Data provided by Finnhub");
+                foreach (var a in articles)
+                {
+                    string fieldName = $"**{a.Headline}**";
+                    string fieldValue = $"\n\n{a.Summary}\n\n";
+                    fieldValue += $"Source: [{a.Source}]({a.Url}) | Date: {a.DateOfArticle}\n-----";
+                    embedBuilder.AddField(fieldName, fieldValue, false);
+                }
+
+                await FollowupAsync(embed: embedBuilder.Build());
             }
         }
         catch (StockDataNotFoundException ex)
         {
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("Quote Not Found") // Clear, user-centric title
+                    .WithTitle("Information Not Found") // Clear, user-centric title
                     .AddField("Message", ex.UserFriendlyMessage) // Directly use the user-friendly message from the exception
                     .WithColor(Color.Orange) // A warning/informational color
                     .WithFooter("Stocki 2025")
@@ -70,7 +61,7 @@ public class QuoteCommand : InteractionModuleBase<SocketInteractionContext>
         {
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("Error")
+                    .WithTitle("Exteral Service Error")
                     .AddField("Message", ex.UserFriendlyMessage)
                     .WithColor(Color.Red) // Critical error color
                     .WithFooter("If this persists, please contact support.")
@@ -87,7 +78,7 @@ public class QuoteCommand : InteractionModuleBase<SocketInteractionContext>
                     .Build()
             );
         }
-        catch (Exception ex) // Catch any other unexpected errors
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex.Message);
             await FollowupAsync(

@@ -2,70 +2,50 @@ using Discord;
 using Discord.Interactions;
 using MediatR;
 using Stocki.Application.Exceptions;
-using Stocki.Application.Queries.Overview;
+using Stocki.Application.Queries.Quote;
+using Stocki.Domain.Models;
 using Stocki.Domain.ValueObjects;
 
-namespace Stocki.Bot.Commands;
+namespace Stocki.Discord.Modules;
 
-public class OverviewCommand : InteractionModuleBase<SocketInteractionContext>
+public class QuoteModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly ILogger<OverviewCommand> _logger;
+    private readonly ILogger<QuoteModule> _logger;
     private readonly IMediator _mediator;
 
-    public OverviewCommand(ILogger<OverviewCommand> logger, IMediator m)
+    public QuoteModule(ILogger<QuoteModule> logger, IMediator m)
     {
         _logger = logger;
         _mediator = m;
     }
 
-    [SlashCommand("overview", "Provides an in depth financial overview of a stock")]
-    public async Task HandleGetStockOverviewAsync(
+    [SlashCommand("quote", "Provides a quote view of a stock")]
+    public async Task HandleGetQuoteAsync(
         [Summary("ticker", "the ticker of the stock you want an overview of e.g. AAPL")]
             string ticker
     )
     {
-        await DeferAsync(); // Acknowledge command immediately
+        await DeferAsync();
 
         try
         {
-            var symbol = new TickerSymbol(ticker);
-            StockOverviewQuery query = new(symbol);
-
-            _logger.LogInformation("Received /overview command for ticker {Ticker}", ticker);
-
-            StockOverview? stockOverview = await _mediator.Send(query, CancellationToken.None);
-
-            if (stockOverview is not null)
+            TickerSymbol symbol = new TickerSymbol(ticker);
+            StockQuoteQuery query = new(symbol);
+            StockQuote? quote = await _mediator.Send(query, CancellationToken.None);
+            var embedBuilder = new EmbedBuilder();
+            if (quote is not null)
             {
-                _logger.LogInformation(
-                    "The /overview request succeeded for ticker {Ticker}",
-                    ticker
-                );
+                _logger.LogInformation("The /quote request succeeded for ticker {Ticker}", ticker);
                 await FollowupAsync(
-                    embed: new EmbedBuilder()
-                        .WithTitle($"{stockOverview.Name} ({stockOverview.Symbol})")
-                        .WithDescription(stockOverview.Description)
-                        .AddField("Sector", stockOverview.Sector ?? "N/A")
-                        .AddField("Industry", stockOverview.Industry ?? "N/A")
-                        .AddField(
-                            "Market Cap",
-                            stockOverview.MarketCapitalization?.ToString("N0") ?? "N/A"
-                        )
-                        .AddField("P/E Ratio", stockOverview.PERatio?.ToString("N2") ?? "N/A")
-                        .AddField(
-                            "Dividend Yield",
-                            stockOverview.DividendYield?.ToString("P2") ?? "N/A"
-                        )
-                        .AddField(
-                            "52 Week High",
-                            stockOverview.FiftyTwoWeekHigh?.ToString("C2") ?? "N/A"
-                        ) // Format as currency
-                        .AddField(
-                            "52 Week Low",
-                            stockOverview.FiftyTwoWeekLow?.ToString("C2") ?? "N/A"
-                        ) // Format as currency
+                    embed: embedBuilder
+                        .WithTitle($"{quote.Ticker} - Stock Quote ({DateTime.Now})")
+                        .AddField("Current Price", $"${quote.CurrentPrice:F2}")
+                        .AddField("Opening Price", $"${quote.OpeningPrice:F2}")
+                        .AddField("Previous Close", $"${quote.ClosingPrice:F2}")
+                        .AddField("High", $"${quote.High:F2}")
+                        .AddField("Low", $"${quote.Low:F2}")
                         .WithColor(Color.Blue)
-                        .WithFooter("Data provided by AlphaVantage")
+                        .WithFooter("Data provided by Finnhub")
                         .Build()
                 );
             }
@@ -74,7 +54,7 @@ public class OverviewCommand : InteractionModuleBase<SocketInteractionContext>
         {
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithTitle("Information Not Found") // Clear, user-centric title
+                    .WithTitle("Quote Not Found") // Clear, user-centric title
                     .AddField("Message", ex.UserFriendlyMessage) // Directly use the user-friendly message from the exception
                     .WithColor(Color.Orange) // A warning/informational color
                     .WithFooter("Stocki 2025")
