@@ -1,3 +1,4 @@
+using Google.GenAI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,23 @@ public static class DependencyInjection
     {
         services.AddAppPersistence(configuration);
         services.AddExternalMarketClients();
+        services.AddGeminiClient(configuration);
         return services;
+    }
+
+    private static IServiceCollection AddGeminiClient(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton<Client>((sp) =>
+        {
+            var settings = sp.GetRequiredService<IOptions<GeminiSettings>>().Value;
+            if (string.IsNullOrEmpty(settings.ApiKey)) throw new InvalidOperationException("Gemini API key is null or empty.");
+            return new Client(apiKey: settings.ApiKey);
+        });
+
+        services.AddSingleton<IGeminiClient, GeminiClient>();
+
+        return services;
+
     }
 
     private static IServiceCollection AddExternalMarketClients(this IServiceCollection services)

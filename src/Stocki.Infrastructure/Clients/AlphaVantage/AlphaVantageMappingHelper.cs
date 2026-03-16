@@ -1,7 +1,5 @@
-// Stocki.Infrastructure/Clients/AlphaVantage/Mappers/AlphaVantageOverviewMapper.cs
-using System.Globalization; // For CultureInfo.InvariantCulture
-using Microsoft.Extensions.Logging; // For ILogger
-using Stocki.Domain.Models;
+using System.Globalization;
+using Microsoft.Extensions.Logging;
 using Stocki.Infrastructure.Clients.DTOs;
 
 namespace Stocki.Infrastructure.Clients.AlphaVantage;

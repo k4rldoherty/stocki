@@ -38,7 +38,7 @@ public static class DependencyInjection
 
         services.AddHostedService<BotStartupService>();
         services.AddHostedService<PriceMonitoringService>();
-        services.AddSingleton<InputHandlerService>();
+        services.AddSingleton<MessageHandler>();
         services.AddSingleton<FinnhubWSManager>();
         services.AddSingleton<PriceChecker>();
 

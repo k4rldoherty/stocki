@@ -14,7 +14,7 @@ public class BotStartupService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactionService;
     private readonly IServiceProvider _serviceProvider;
-    private readonly InputHandlerService _inputHandlerService; // If still needed
+    private readonly MessageHandler _messageHandler;
     private readonly IOptions<DiscordSettings> _discordSettings;
 
     public BotStartupService(
@@ -22,7 +22,7 @@ public class BotStartupService : BackgroundService
         DiscordSocketClient client,
         InteractionService interactionService,
         IServiceProvider serviceProvider,
-        InputHandlerService inputHandlerService,
+        MessageHandler messageHandler,
         IOptions<DiscordSettings> discordSettings
     )
     {
@@ -30,8 +30,8 @@ public class BotStartupService : BackgroundService
         _client = client;
         _interactionService = interactionService;
         _serviceProvider = serviceProvider;
-        _inputHandlerService = inputHandlerService;
         _discordSettings = discordSettings;
+        _messageHandler = messageHandler;
 
         // Hook up logging events
         _client.Log += LogAsync;
@@ -41,7 +41,7 @@ public class BotStartupService : BackgroundService
         _client.InteractionCreated += HandleInteractionAsync;
 
         // Hook up MessageReceived
-        _client.MessageReceived += _inputHandlerService.HandleMessageAsync;
+        _client.MessageReceived += _messageHandler.HandleMessageAsync;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
