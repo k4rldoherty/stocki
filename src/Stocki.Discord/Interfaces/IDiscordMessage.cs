@@ -7,6 +7,12 @@ public interface IDiscordUser
     bool IsBot { get; }
     ulong Id { get; }
     string Mention { get; }
+    ValueTask<IDiscordDmChannel> CreateDMChannelAsync();
+}
+
+public interface IDiscordDmChannel
+{
+    Task SendMessageAsync(string? text = null, bool isTTS = false, Embed? embed = null, RequestOptions? options = null);
 }
 
 public interface IDiscordMessageChannel

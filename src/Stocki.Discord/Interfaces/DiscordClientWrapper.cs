@@ -1,4 +1,3 @@
-using Discord;
 using Discord.WebSocket;
 
 namespace Stocki.Discord.Interfaces;
@@ -14,8 +13,9 @@ public class DiscordClientWrapper : IDiscordClientWrapper
 
     public ulong CurrentUserId => _client.CurrentUser.Id;
 
-    public ValueTask<IUser?> GetUserAsync(ulong userId)
+    public async ValueTask<IDiscordUser?> GetUserAsync(ulong userId)
     {
-        return _client.GetUserAsync(userId);
+        var user = await _client.GetUserAsync(userId);
+        return user != null ? new DiscordUserWrapper((SocketUser)user) : null;
     }
 }

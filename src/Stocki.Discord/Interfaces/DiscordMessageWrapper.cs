@@ -15,6 +15,12 @@ public class DiscordUserWrapper : IDiscordUser
     public bool IsBot => _user.IsBot;
     public ulong Id => _user.Id;
     public string Mention => _user.Mention;
+
+    public async ValueTask<IDiscordDmChannel> CreateDMChannelAsync()
+    {
+        var channel = await _user.CreateDMChannelAsync();
+        return new DiscordDmChannelWrapper(channel);
+    }
 }
 
 public class DiscordMessageChannelWrapper : IDiscordMessageChannel

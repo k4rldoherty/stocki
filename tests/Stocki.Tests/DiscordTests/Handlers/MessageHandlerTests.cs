@@ -4,7 +4,7 @@ using Stocki.Application.Interfaces;
 using Stocki.Discord.Handlers;
 using Stocki.Discord.Interfaces;
 
-namespace Stocki.Tests.Discord.Tests.Handlers;
+namespace Stocki.Tests.DiscordTests.Handlers;
 
 public class MessageHandlerTests
 {
@@ -112,6 +112,8 @@ public class MessageHandlerTests
         messageMock.Setup(m => m.Channel).Returns(channelMock.Object);
 
         await _handler.HandleMessageAsync(messageMock.Object);
+
+        await Task.Delay(100);
 
         _clientMock.Verify(
             c => c.GetResponseAsync("What is a stock?", It.IsAny<CancellationToken>()),
