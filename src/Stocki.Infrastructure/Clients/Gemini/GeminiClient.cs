@@ -11,16 +11,14 @@ public class GeminiClient : IGeminiClient
     private readonly ILogger<GeminiClient> _logger;
     private readonly IOptions<GeminiSettings> _settings;
     private readonly Client _client;
+    private readonly GenerateContentConfig _generateContentConfig;
+
     public GeminiClient(ILogger<GeminiClient> logger, IOptions<GeminiSettings> settings, Client client)
     {
         _logger = logger;
         _settings = settings;
         _client = client;
-    }
-
-    public async ValueTask<string> GetResponseAsync(string prompt, CancellationToken c)
-    {
-        var config = new GenerateContentConfig
+        _generateContentConfig = new GenerateContentConfig
         {
             SystemInstruction = new Content
             {
@@ -30,7 +28,7 @@ public class GeminiClient : IGeminiClient
                   {
                     Text = $@"
                     You are a sarcastically witty stock market assistant. 
-                    Today's date is {DateTime.Now}.
+                    Today's date is {DateTime.UtcNow.ToShortDateString()}.
                     1. ONLY answer stock/finance questions. For anything else, say: 'I only talk stocks', but in a sarcastic or witty way.
                     2. If you don't know an answer or lack real-time data for a specific price, say: 'I don't have that information.'
                     3. Do not speculate on out-of-date events.
@@ -38,16 +36,26 @@ public class GeminiClient : IGeminiClient
                   }
                 ]
             },
-            MaxOutputTokens = 2000,
+            MaxOutputTokens = 1000,
+            Temperature = 0.5,
             ThinkingConfig = new ThinkingConfig
             {
-                ThinkingLevel = ThinkingLevel.Medium,
+                ThinkingLevel = ThinkingLevel.Minimal,
             }
         };
+    }
+
+    public async ValueTask<string> GetResponseAsync(string prompt, CancellationToken c)
+    {
         try
         {
+            var response = await _client.Models.GenerateContentAsync(
+                model: _settings.Value.Model,
+                contents: prompt,
+                config: _generateContentConfig,
+                cancellationToken: c
+            );
 
-            var response = await _client.Models.GenerateContentAsync(model: _settings.Value.Model, contents: prompt, config: config, cancellationToken: c);
             return response.Candidates?[0].Content?.Parts?[0].Text ?? "Could not generate a response.";
         }
         catch (Exception ex)

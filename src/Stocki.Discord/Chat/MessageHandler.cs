@@ -7,16 +7,32 @@ public class MessageHandler
 {
     private readonly IGeminiClient _client;
     private readonly ILogger<MessageHandler> _logger;
-    public MessageHandler(IGeminiClient client, ILogger<MessageHandler> logger)
+    private readonly DiscordSocketClient _discordClient;
+
+    public MessageHandler(IGeminiClient client, ILogger<MessageHandler> logger, DiscordSocketClient discordClient)
     {
         _client = client;
         _logger = logger;
+        _discordClient = discordClient;
     }
-    public Task HandleMessageAsync(SocketMessage msg)
+
+    public async Task HandleMessageAsync(SocketMessage msg)
     {
-        // Stops the bot from replying to itself
         if (msg.Author.IsBot)
-            return Task.CompletedTask;
+        {
+            return;
+        }
+
+        var mentions = msg.MentionedUsers;
+        if (!mentions.Any(u => u.Id == _discordClient.CurrentUser.Id))
+            return;
+
+        var prompt = msg.Content;
+        foreach (var user in mentions)
+            prompt = prompt.Replace(user.Mention, "").Trim();
+
+        if (string.IsNullOrWhiteSpace(prompt))
+            await msg.Channel.SendMessageAsync("Please enter a prompt.");
 
         _ = Task.Run(async () =>
             {
@@ -27,7 +43,7 @@ public class MessageHandler
                     {
 
                         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
-                        var response = await _client.GetResponseAsync(msg.Content, cts.Token);
+                        var response = await _client.GetResponseAsync(prompt, cts.Token);
                         if (response.Length > 2000)
                             await msg.Channel.SendMessageAsync(response[..1997] + "...");
                         else await msg.Channel.SendMessageAsync(response);
@@ -38,6 +54,7 @@ public class MessageHandler
                     _logger.LogError(ex, "Error handling message");
                 }
             });
-        return Task.CompletedTask;
+
+        await Task.CompletedTask;
     }
 }
