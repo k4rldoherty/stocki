@@ -1,12 +1,11 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Stocki.Application.Interfaces;
 using Stocki.Application.Queries.Overview;
-using Stocki.Infrastructure.Clients.AlphaVantage;
-using Stocki.Infrastructure.Clients.DTOs;
+using Stocki.Infrastructure.Clients.AlphaVantage.DTOs;
 using Stocki.Shared.Config;
 using Stocki.Shared.Models;
 
@@ -14,6 +13,11 @@ namespace Stocki.Infrastructure.Clients;
 
 public class AlphaVantageClient : IAlphaVantageClient
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly IMemoryCache _cache;
     private readonly HttpClient _client;
     private readonly ILogger<AlphaVantageClient> _logger;
@@ -32,67 +36,110 @@ public class AlphaVantageClient : IAlphaVantageClient
         _settings = settings;
     }
 
-    public async Task<ApiResponse<StockOverview>> GetStockOverviewAsync(
+    public async ValueTask<ApiResponse<StockOverview>> GetStockOverviewAsync(
         StockOverviewQuery q,
         CancellationToken token
     )
     {
         var url =
             $"{_settings.Value.BaseUrl}query?function=OVERVIEW&symbol={q.Symbol.Value}&apikey={_settings.Value.ApiKey}";
-        if (_cache.TryGetValue(url, out StockOverview? CacheRes) && CacheRes is not null)
+
+        if (_cache.TryGetValue(url, out StockOverview? cacheResult) && cacheResult is not null)
         {
-            _logger.LogInformation($"Query retrieved from cache: {url}");
-            return ApiResponse<StockOverview>.Success(CacheRes);
+            _logger.LogInformation("Query retrieved from cache: {Url}", url);
+            return ApiResponse<StockOverview>.Success(cacheResult);
         }
+
         try
         {
-            var res = await _client.GetAsync(url, token);
-            if (res.StatusCode != HttpStatusCode.OK)
+            await using var stream = await _client.GetStreamAsync(url, token);
+            if (stream.CanSeek && stream.Length == 0)
             {
-                _logger.LogWarning($"API returned status code {res.StatusCode}");
+                _logger.LogWarning("No data retrieved for ticker {Symbol}", q.Symbol.Value);
                 return ApiResponse<StockOverview>.Failure(
-                    $"Alpha Vantage returned status code: {res.StatusCode}",
-                    res.StatusCode
-                );
-            }
-            string resStr = await res.Content.ReadAsStringAsync();
-            if (string.IsNullOrEmpty(resStr) || resStr.Equals("{}"))
-                return ApiResponse<StockOverview>.Failure(
-                    $"No data retrieved for this ticker",
-                    res.StatusCode
-                );
-
-            AVStockOverviewDTO? avObj = JsonConvert.DeserializeObject<AVStockOverviewDTO>(resStr);
-
-            if (avObj == null)
-            {
-                _logger.LogWarning("Serialized object was null");
-                return ApiResponse<StockOverview>.Failure(
-                    $"Failed to serialize Stock Overview DTO object for ticker {q.Symbol.Value}.",
+                    "No data retrieved for this ticker",
                     HttpStatusCode.InternalServerError
                 );
             }
 
-            // Uses static mapped class
-            StockOverview? returnObj = AlphaVantageMappingHelper.MapOverview(
-                avObj,
-                q.Symbol.Value,
-                _logger
+            var avDto = await JsonSerializer.DeserializeAsync<AVStockOverviewDTO>(stream, JsonOptions, token);
+
+            if (avDto is null)
+            {
+                _logger.LogWarning("Failed to deserialize response for ticker {Symbol}", q.Symbol.Value);
+                return ApiResponse<StockOverview>.Failure(
+                    $"Failed to deserialize Stock Overview for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.InternalServerError
+                );
+            }
+
+            if (string.IsNullOrWhiteSpace(avDto.Symbol))
+            {
+                _logger.LogWarning("DTO has null or empty symbol for {Symbol}", q.Symbol.Value);
+                return ApiResponse<StockOverview>.Failure(
+                    $"No data found for ticker {q.Symbol.Value}.",
+                    HttpStatusCode.NotFound
+                );
+            }
+
+            var stockOverview = new StockOverview(
+                Name: avDto.Name,
+                Symbol: avDto.Symbol,
+                Description: avDto.Description,
+                AssetType: avDto.AssetType,
+                Currency: avDto.Currency,
+                Sector: avDto.Sector,
+                Industry: avDto.Industry,
+                FiscalYearEnd: avDto.FiscalYearEnd,
+                LatestQuarter: ParseDate(avDto.LatestQuarter),
+                MarketCapitalization: avDto.MarketCapitalization,
+                EBITDA: avDto.EBITDA,
+                PERatio: avDto.PERatio,
+                PEGRatio: avDto.PEGRatio,
+                BookValue: avDto.BookValue,
+                DividendPerShare: avDto.DividendPerShare,
+                DividendYield: avDto.DividendYield,
+                EPS: avDto.EPS,
+                RevenuePerShareTTM: avDto.RevenuePerShareTTM,
+                ProfitMargin: avDto.ProfitMargin,
+                OperatingMarginTTM: avDto.OperatingMarginTTM,
+                ReturnOnAssetsTTM: avDto.ReturnOnAssetsTTM,
+                ReturnOnEquityTTM: avDto.ReturnOnEquityTTM,
+                RevenueTTM: avDto.RevenueTTM,
+                GrossProfitTTM: avDto.GrossProfitTTM,
+                DilutedEPSTTM: avDto.DilutedEPSTTM,
+                QuarterlyEarningsGrowthYOY: avDto.QuarterlyEarningsGrowthYOY,
+                QuarterlyRevenueGrowthYOY: avDto.QuarterlyRevenueGrowthYOY,
+                AnalystTargetPrice: avDto.AnalystTargetPrice,
+                AnalystRatingStrongBuy: avDto.AnalystRatingStrongBuy,
+                AnalystRatingBuy: avDto.AnalystRatingBuy,
+                AnalystRatingHold: avDto.AnalystRatingHold,
+                AnalystRatingSell: avDto.AnalystRatingSell,
+                AnalystRatingStrongSell: avDto.AnalystRatingStrongSell,
+                TrailingPE: avDto.TrailingPE,
+                ForwardPE: avDto.ForwardPE,
+                PriceToSalesRatioTTM: avDto.PriceToSalesRatioTTM,
+                PriceToBookRatio: avDto.PriceToBookRatio,
+                EVToRevenue: avDto.EVToRevenue,
+                EVToEBITDA: avDto.EVToEBITDA,
+                Beta: avDto.Beta,
+                FiftyTwoWeekHigh: avDto.FiftyTwoWeekHigh,
+                FiftyTwoWeekLow: avDto.FiftyTwoWeekLow,
+                FiftyDayMovingAverage: avDto.FiftyDayMovingAverage,
+                TwoHundredDayMovingAverage: avDto.TwoHundredDayMovingAverage,
+                SharesOutstanding: avDto.SharesOutstanding,
+                DividendDate: ParseDate(avDto.DividendDate),
+                ExDividendDate: ParseDate(avDto.ExDividendDate)
             );
-            if (returnObj is null)
-            {
-                return ApiResponse<StockOverview>.Failure(
-                    $"Failed to parse Stock Overview object for ticker {q.Symbol.Value}.",
-                    HttpStatusCode.InternalServerError
-                );
-            }
-            _cache.Set(url, returnObj);
+
+            _cache.Set(url, stockOverview, TimeSpan.FromMinutes(10));
             _logger.LogInformation("Request to api succeeded and data cached successfully");
-            return ApiResponse<StockOverview>.Success(returnObj, HttpStatusCode.OK);
+
+            return ApiResponse<StockOverview>.Success(stockOverview, HttpStatusCode.OK);
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex.Message);
+            _logger.LogError(ex, "JSON parsing error for ticker {Symbol}", q.Symbol.Value);
             return ApiResponse<StockOverview>.Failure(
                 ex.Message,
                 HttpStatusCode.InternalServerError
@@ -100,11 +147,20 @@ public class AlphaVantageClient : IAlphaVantageClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex.Message);
+            _logger.LogError(ex, "Unexpected error for ticker {Symbol}", q.Symbol.Value);
             return ApiResponse<StockOverview>.Failure(
                 ex.Message,
                 HttpStatusCode.InternalServerError
             );
         }
+    }
+
+    private static DateTime? ParseDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Equals("None", StringComparison.OrdinalIgnoreCase))
+            return null;
+        if (DateTime.TryParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime result))
+            return result;
+        return null;
     }
 }

@@ -54,7 +54,7 @@ public class DiscordMessageWrapper : IDiscordMessage
 
     public IDiscordUser Author => new DiscordUserWrapper(_message.Author);
     public string Content => _message.Content;
-    public IReadOnlyCollection<IDiscordUser> MentionedUsers => 
+    public IReadOnlyCollection<IDiscordUser> MentionedUsers =>
         _message.MentionedUsers.Select(u => new DiscordUserWrapper(u)).ToList();
     public IDiscordMessageChannel Channel => new DiscordMessageChannelWrapper((SocketTextChannel)_message.Channel);
 }

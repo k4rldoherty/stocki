@@ -5,7 +5,7 @@ namespace Stocki.Application.Interfaces;
 
 public interface IAlphaVantageClient
 {
-    public Task<ApiResponse<StockOverview>> GetStockOverviewAsync(
+    ValueTask<ApiResponse<StockOverview>> GetStockOverviewAsync(
         StockOverviewQuery q,
         CancellationToken t
     );
